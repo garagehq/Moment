@@ -1,4 +1,4 @@
-# moment-recorder-video
+# moment-recorder
 Records Significant Moments in Garage's History
 
 

@@ -12,7 +12,10 @@ Records Significant Moments in Garage's History
 ## Hardware Requirements
 
 1. Raspberry Pi Zero 2
-2. 
+2. PiJuice Power Bank
+3. USB OTG Cable
+4. LCD/TFT Raspberry Pi HAT Screen with Buttons
+5. GoPro
 
 ## Workflow
 

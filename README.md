@@ -34,7 +34,11 @@ We will be segmenting the livestream into 5 second chunks, and then using [ffmpe
 ## References
 
 [1. ffmeg video concatination](https://superuser.com/questions/521113/join-mp4-files-in-linux)
+
 [2. Rclone Web GUI](https://github.com/rclone/rclone-webui-react)
+
 [3. Raspberry-wifi-conf](https://github.com/sabhiram/raspberry-wifi-conf)
+
 [4. Raspberry-pi-turnkey](https://github.com/schollz/raspberry-pi-turnkey)
+
 [5. GoProStream](https://github.com/KonradIT/GoProStream)

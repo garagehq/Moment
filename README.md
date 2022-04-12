@@ -42,3 +42,8 @@ We will be segmenting the livestream into 5 second chunks, and then using [ffmpe
 [4. Raspberry-pi-turnkey](https://github.com/schollz/raspberry-pi-turnkey)
 
 [5. GoProStream](https://github.com/KonradIT/GoProStream)
+
+
+## TODO:
+
+- [ ] Fork the raspberry-wifi-conf repo and configure it so that it starts on a better port/IP address and have a custom but rememberable SSID/password

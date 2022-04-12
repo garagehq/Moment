@@ -29,6 +29,9 @@ mkdir /home/pi/drive/Garage_Videos
 sudo cp assets/init.d/raspberry-wifi-conf /etc/init.d/raspberry-wifi-conf 
 sudo chmod +x /etc/init.d/raspberry-wifi-conf  
 sudo update-rc.d raspberry-wifi-conf defaults
+sudo systemctl unmask hostapd # by default the hostapd is masked so we need to unmask it
+sudo systemctl enable hostapd
+sudo systemctl start hostapd
 
 # edit rc.local to add the following lines before the exit 0
 # cd /home/pi/raspberry-wifi-conf

@@ -1,6 +1,6 @@
 [Unit]
 Description=Memory Device (rclone)
-AssertPathIsDirectory=/home/pi/drive/Garage_Pics
+AssertPathIsDirectory=/home/pi/drive/Garage_Videos
 After=lighttpd.service
 
 [Service]

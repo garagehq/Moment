@@ -37,3 +37,11 @@ sudo systemctl start hostapd
 # edit rc.local to add the following lines before the exit 0
 # cd /home/pi/raspberry-wifi-conf
 # sudo /usr/bin/node server.js < /dev/null &
+
+# add GoProStream
+cd /home/pi
+mkdir local_save
+git clone https://github.com/KonradIT/GoProStream.git
+cd GoProStream
+sudo install -m 777 GoProStream.py /usr/local/bin
+sudo install -m 777 GoProStream.rb /usr/local/bin

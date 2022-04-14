@@ -1,5 +1,5 @@
-# moment-recorder
-Records Significant Moments in Garage's History
+# Moment
+Captures Just the significant Moments in Time you want, without the need for laborous editing
 
 
 1. Connect to Device Access Point
@@ -15,7 +15,7 @@ Records Significant Moments in Garage's History
 2. PiJuice Power Bank
 3. USB OTG Cable
 4. LCD/TFT Raspberry Pi HAT Screen with Buttons
-5. GoPro
+5. Raspberry Pi Cam2 or ArduCam 16MP + Autofocus
 
 ## Workflow
 
@@ -26,9 +26,7 @@ Records Significant Moments in Garage's History
 
 ### For the Memory Recording Step:
 
-Utilize [GoProStream](https://github.com/KonradIT/GoProStream) for the actual Camera recording stream. GoProStream will have to be hacked in order to segment the video stream.
-
-We will be segmenting the livestream into 5 second chunks, and then using [ffmpeg](https://superuser.com/questions/521113/join-mp4-files-in-linux) to concatinate the video files when necessary. If the filesize of the overall folder of files is over 8GB in total, then we start to delete the files at the beginning as we save new footage. Since we are utilizing a Raspberry Pi Zero 2 as the hardware base - we can utilize one of the two cores to do the recording and the other core can handle the image processing. Every 5 seconds is when the image processing would "happen" with a hard interrupt when the buttons are pressed.
+We will be segmenting the livestream into 5 second chunks, and then using [ffmpeg](https://superuser.com/questions/521113/join-mp4-files-in-linux) or libcamera to concatinate the video files when necessary. If the filesize of the overall folder of files is over 8GB in total, then we start to delete the files at the beginning as we save new footage. Since we are utilizing a Raspberry Pi Zero 2 as the hardware base - we can utilize one of the two cores to do the recording and the other core can handle the image processing. Every 5 seconds is when the image processing would "happen" with a hard interrupt when the buttons are pressed.
 
 
 ## References
@@ -41,9 +39,5 @@ We will be segmenting the livestream into 5 second chunks, and then using [ffmpe
 
 [4. Raspberry-pi-turnkey](https://github.com/schollz/raspberry-pi-turnkey)
 
-[5. GoProStream](https://github.com/KonradIT/GoProStream)
+[5. libcamera](https://github.com/kbingham/libcamera)
 
-
-## TODO:
-
-- [ ] Fork the raspberry-wifi-conf repo and configure it so that it starts on a better port/IP address and have a custom but rememberable SSID/password

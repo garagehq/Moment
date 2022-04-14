@@ -70,8 +70,8 @@ sudo python3 adafruit-pitft.py --display=st7789_240x240 --rotation=1 --install-t
 
 # Install packages related to the Moment python executable
 echo "[DEBUG]:Install packages related to the Moment python executable:"
-mkdir -p /home/pi/moment/icon
-cp -rf icon /home/pi/moment
+mkdir -p /home/pi/Moment/icon
+cp -rf icon /home/pi/Moment
 echo  "[DEBUG]:Installing Pip Requirements"
 python3 -m pip install --upgrade pip
 python3 -m pip install -r requirements.txt

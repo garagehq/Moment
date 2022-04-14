@@ -80,6 +80,7 @@ echo  "[DEBUG]:Installing MomentCamera AutoStart service"
 sudo install Moment.py /usr/bin/
 sudo mkdir -p /home/pi/.config/autostart
 sudo install -m 644 *.desktop /home/pi/.config/autostart/
+sudo cp Moment.desktop ~/Desktop/
 sudo sed -i -e '$i \start_x=1\ngpu_mem=128\n' /boot/config.txt
 
 # Reboot

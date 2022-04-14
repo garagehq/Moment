@@ -1,5 +1,5 @@
 [Desktop Entry]
 Type=Application
 Name=Moment
-Exec=/usr/bin/python3 /home/pi/moment/Moment.py
+Exec=/usr/bin/python3 /home/pi/Moment/Moment.py
 

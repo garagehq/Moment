@@ -38,10 +38,19 @@ sudo systemctl start hostapd
 # cd /home/pi/raspberry-wifi-conf
 # sudo /usr/bin/node server.js < /dev/null &
 
-# add GoProStream
-cd /home/pi
-mkdir local_save
-git clone https://github.com/KonradIT/GoProStream.git
-cd GoProStream
-sudo install -m 777 GoProStream.py /usr/local/bin
-sudo install -m 777 GoProStream.rb /usr/local/bin
+# add libcamera and Arducam to the system
+wget -O install_pivariety_pkgs.sh https://github.com/ArduCAM/Arducam-Pivariety-V4L2-Driver/releases/download/install_script/install_pivariety_pkgs.sh
+chmod +x install_pivariety_pkgs.sh
+./install_pivariety_pkgs.sh -p libcamera_dev
+./install_pivariety_pkgs.sh -p libcamera_apps
+./install_pivariety_pkgs.sh -p imx519_kernel_driver
+git clone https://github.com/ArduCAM/Arducam-Pivariety-V4L2-Driver.git
+
+# Open /boot/config.txt and add "dtoverlay=vc4-fkms-v3d" under [all] and then save and reboot
+
+# Install miniTFT display
+https://learn.adafruit.com/adafruit-mini-pitft-135x240-color-tft-add-on-for-raspberry-pi/1-3-240x240-kernel-module-install
+# ^remember to change a line in the libts installation to include installing libts-dev, i.e.: sudo apt install libts-dev
+# this means I am going to have to fork the repo and make the change inline and add all the instructions
+
+sudo reboot now

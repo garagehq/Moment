@@ -1,17 +1,23 @@
 #!/bin/bash
 
-sudo apt-get install -y git -vim
+sudo apt-get install -y git vim
+
+# HOLD/PIN THE KERNEL IMAGES
+sudo apt-mark hold libraspberrypi-bin libraspberrypi-dev libraspberrypi-doc libraspberrypi0
+sudo apt-mark hold raspberrypi-bootloader raspberrypi-kernel raspberrypi-kernel-headers
 
 # Pin the Kernel
-cd ~
-git clone https://github.com/NickEngmann/Raspberry-Pi-Installer-Scripts.git
-cd Raspberry-Pi-Installer-Scripts
-sudo ./rpi-pin-kernel-firmware.sh
+# cd ~
+# git clone https://github.com/NickEngmann/Raspberry-Pi-Installer-Scripts.git
+# cd Raspberry-Pi-Installer-Scripts
+# sudo pip3 install adafruit-python-shell
+# sudo python3 rpi-pin-kernel-firmware.py 1.20220120-1
 
 # Installing miniTFT display
 echo "[DEBUG]:Install miniTFT display:"
 cd ~
 sudo pip3 install --upgrade adafruit-python-shell click
+git clone https://github.com/NickEngmann/Raspberry-Pi-Installer-Scripts.git
 cd Raspberry-Pi-Installer-Scripts
 sudo python3 adafruit-pitft.py --display=st7789_240x240 --rotation=1 --install-type=fbcp
 
@@ -32,7 +38,7 @@ mkdir -p /home/pi/drive/Garage_Videos
 
 # [TODO!]still need to configure rclone (which could be done via the web-interface?)
 # rclone config
-# Remember to name it "MemoryDevice"
+# Remember to name it "MemoryDevice" also remember to not change the root directory of the mount point
 sudo install -m 644 *.service /etc/systemd/system/ 
 sudo systemctl start rclone-automount
 sudo systemctl enable rclone-automount
@@ -69,9 +75,14 @@ sudo systemctl enable hostapd
 sudo systemctl start hostapd
 
 # [TODO!] Edit rc.local to add the following lines before the exit 0
-# vi /etc/rc.local
+# Commands do this are the following:
+
+# ```
+# sudo vi /etc/rc.local
+# add below line 50
 # cd /home/pi/raspberry-wifi-conf
 # sudo /usr/bin/node server.js < /dev/null &
+# ```
 
 # change adafruit-pitft to not signal for reboot
 

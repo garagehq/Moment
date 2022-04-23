@@ -1,5 +1,20 @@
 #!/bin/bash
 
+sudo apt-get install -y git -vim
+
+# Pin the Kernel
+cd ~
+git clone https://github.com/NickEngmann/Raspberry-Pi-Installer-Scripts.git
+cd Raspberry-Pi-Installer-Scripts
+sudo ./rpi-pin-kernel-firmware.sh
+
+# Installing miniTFT display
+echo "[DEBUG]:Install miniTFT display:"
+cd ~
+sudo pip3 install --upgrade adafruit-python-shell click
+cd Raspberry-Pi-Installer-Scripts
+sudo python3 adafruit-pitft.py --display=st7789_240x240 --rotation=1 --install-type=fbcp
+
 # Adding libcamera and Arducam to the system
 echo "Adding `libcamera` and Arducam to the system:"
 cd ~
@@ -17,15 +32,16 @@ mkdir -p /home/pi/drive/Garage_Videos
 
 # [TODO!]still need to configure rclone (which could be done via the web-interface?)
 # rclone config
+# Remember to name it "MemoryDevice"
+sudo install -m 644 *.service /etc/systemd/system/ 
+sudo systemctl start rclone-automount
+sudo systemctl enable rclone-automount
 
 # Fix the udev rules
 echo "[DEBUG]:Fix the udev rules:"
 sudo cp 99-usb-autorun.rules /etc/udev/rules.d/
-sudo install -m 644 *.service /etc/systemd/system/ 
-install -m 777 *.sh /usr/local/bin
+sudo install -m 777 *.sh /usr/local/bin
 sudo udevadm control --reload && udevadm trigger
-sudo systemctl start rclone-automount
-sudo systemctl enable rclone-automount
 
 #  Install Raspberry-Wifi-Config
 echo "[DEBUG]:Install Raspberry-Wifi-Config:"
@@ -53,18 +69,11 @@ sudo systemctl enable hostapd
 sudo systemctl start hostapd
 
 # [TODO!] Edit rc.local to add the following lines before the exit 0
+# vi /etc/rc.local
 # cd /home/pi/raspberry-wifi-conf
 # sudo /usr/bin/node server.js < /dev/null &
 
-
-# Installing miniTFT display
-echo "[DEBUG]:Install miniTFT display:"
-cd ~
-sudo pip3 install --upgrade adafruit-python-shell click
-sudo apt-get install -y git
-git clone https://github.com/NickEngmann/Raspberry-Pi-Installer-Scripts.git
-cd Raspberry-Pi-Installer-Scripts
-sudo python3 adafruit-pitft.py --display=st7789_240x240 --rotation=1 --install-type=fbcp
+# change adafruit-pitft to not signal for reboot
 
 # Install packages related to the Moment python executable
 echo "[DEBUG]:Install packages related to the Moment python executable:"

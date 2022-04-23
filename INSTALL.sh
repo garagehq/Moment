@@ -1,5 +1,15 @@
 #!/bin/bash
 
+# Adding libcamera and Arducam to the system
+echo "Adding `libcamera` and Arducam to the system:"
+cd ~
+wget -O install_pivariety_pkgs.sh https://github.com/ArduCAM/Arducam-Pivariety-V4L2-Driver/releases/download/install_script/install_pivariety_pkgs.sh
+chmod +x install_pivariety_pkgs.sh
+./install_pivariety_pkgs.sh -p libcamera_dev
+./install_pivariety_pkgs.sh -p libcamera_apps
+./install_pivariety_pkgs.sh -p imx519_kernel_driver
+git clone https://github.com/ArduCAM/Arducam-Pivariety-V4L2-Driver.git
+
 # Install Rclone
 echo "[DEBUG]:Install Rclone:"
 curl https://rclone.org/install.sh | sudo bash
@@ -46,18 +56,6 @@ sudo systemctl start hostapd
 # cd /home/pi/raspberry-wifi-conf
 # sudo /usr/bin/node server.js < /dev/null &
 
-# Adding libcamera and Arducam to the system
-echo "Adding `libcamera` and Arducam to the system:"
-cd ~
-wget -O install_pivariety_pkgs.sh https://github.com/ArduCAM/Arducam-Pivariety-V4L2-Driver/releases/download/install_script/install_pivariety_pkgs.sh
-chmod +x install_pivariety_pkgs.sh
-./install_pivariety_pkgs.sh -p libcamera_dev
-./install_pivariety_pkgs.sh -p libcamera_apps
-./install_pivariety_pkgs.sh -p imx519_kernel_driver
-git clone https://github.com/ArduCAM/Arducam-Pivariety-V4L2-Driver.git
-
-# Open /boot/config.txt and add "dtoverlay=vc4-fkms-v3d" under [all] and then save and reboot
-sudo sed -i -e '$i \dtoverlay=vc4-fkms-v3d\n' /boot/config.txt
 
 # Installing miniTFT display
 echo "[DEBUG]:Install miniTFT display:"

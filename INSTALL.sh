@@ -105,7 +105,7 @@ sudo reboot now
 
 # The following command gets the video preview working as well as orients it correctly and sets the resolution to 1080 HD
 
-# libcamera-vid -t 0 --qt-preview --hflip --vflip --autofocus --keypress -o %03d.h264 --segment 10000 width 1920 --height 1080 & sleep 2 xdotool key alt+F11
+# libcamera-vid -t 0 --qt-preview --hflip --vflip --autofocus --keypress -o %03d.h264 --segment 10000 width 1920 --height 1080 & sleep 2 && xdotool key alt+F11
 # with keypress enabled, everytime you press "f" and then enter in the stoud, it will refocus
 # the sleep and the xdotool commands are to make sure the video preview is running in fullscreen
 

@@ -6,6 +6,7 @@ import time
 import glob
 import datetime
 import sys, os
+from subprocess import PIPE, STDOUT, Popen, check_output, call
 import subprocess
 import RPi.GPIO as GPIO # Import Raspberry Pi GPIO library
 
@@ -127,9 +128,10 @@ class Moment:
         print ("Button 23 event callback")
         capture_number = self.timestamp()
         print("Recording starts")
-        # os.system("raspistill -f -t 3500 -o /home/pi/Downloads/" +str(capture_number) + "cam.jpg")
-        os.system("libcamera-vid -t 0 --qt-preview --hflip --vflip --autofocus --keypress -o %03d-"+str(capture_number)+".h264 --segment 10000 width 1920 --height 1080 & sleep 2 xdotool key alt+F11")
-
+        command_execute = Popen(
+            "libcamera-vid -t 0 --qt-preview --hflip --vflip --autofocus --keypress -o %03d-"+str(capture_number)+".h264 --segment 10000 width 1920 --height 1080 & sleep 2 && xdotool key alt+F11", stdout=PIPE, stdin=PIPE, stderr=STDOUT, shell=True)
+        # stdout, stderr = command_execute.communicate()
+        
     def stopRecording(self, channel):
         print ("Button 24 event callback")
         os.system("pkill libcamera-vid")

@@ -1,4 +1,5 @@
 #!/bin/bash
+# All Packages are pinned to the 2022-04-04 Kernel Release
 
 sudo apt-get install -y git vim
 
@@ -6,12 +7,8 @@ sudo apt-get install -y git vim
 sudo apt-mark hold libraspberrypi-bin libraspberrypi-dev libraspberrypi-doc libraspberrypi0
 sudo apt-mark hold raspberrypi-bootloader raspberrypi-kernel raspberrypi-kernel-headers
 
-# Pin the Kernel
-# cd ~
-# git clone https://github.com/NickEngmann/Raspberry-Pi-Installer-Scripts.git
-# cd Raspberry-Pi-Installer-Scripts
-# sudo pip3 install adafruit-python-shell
-# sudo python3 rpi-pin-kernel-firmware.py 1.20220120-1
+# change hostname
+sudo hostnamectl set-hostname moment
 
 # Installing miniTFT display
 echo "[DEBUG]:Install miniTFT display:"
@@ -105,3 +102,24 @@ sudo sed -i -e '$i \start_x=1\ngpu_mem=128\n' /boot/config.txt
 echo "[SUCCESS]: Installation Finished, Rebooting Now..."
 sleep 5
 sudo reboot now
+
+# The following command gets the video preview working as well as orients it correctly and sets the resolution to 1080 HD
+
+# libcamera-vid -t 0 --qt-preview --hflip --vflip --autofocus --keypress -o %03d.h264 --segment 10000 width 1920 --height 1080 & sleep 2 xdotool key alt+F11
+# with keypress enabled, everytime you press "f" and then enter in the stoud, it will refocus
+# the sleep and the xdotool commands are to make sure the video preview is running in fullscreen
+
+# [TODO]: Add a script that automatically refocuses every 30 seconds
+
+# The following command converts the video stream into a valid mp4 file
+# ffmpeg -framerate 30 -i <FILE TO CHANGE> -c copy <FILE TO CHANGE>.mp4
+# The above command only seems to be working for the 000.h264 file, but I'm not sure why.
+#
+# Afterwards create the file list for the video stream
+#echo file file1.mp4 >  mylist.txt 
+#echo file file2.mp4 >> mylist.txt
+#echo file file3.mp4 >> mylist.txt
+#
+#:: Concatenate Files
+#ffmpeg -f concat -i mylist.txt -c copy output.mp4
+

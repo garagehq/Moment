@@ -22,6 +22,9 @@ class Moment:
         GPIO.setmode(GPIO.BCM)     # set up BCM GPIO numbering
         GPIO.setup(23, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.add_event_detect(23, GPIO.FALLING, callback=self.takePicture, bouncetime=2500)
+
+        GPIO.setup(24, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.add_event_detect(24, GPIO.FALLING, callback=self.stopRecording, bouncetime=2500)
             
         self.app = App(layout="grid", title="Camera Controls", bg="black", width=480, height=320)
 
@@ -121,11 +124,16 @@ class Moment:
         self.hide_busy()
 
     def takePicture(self, channel):
-        print ("Button event callback")
+        print ("Button 23 event callback")
         capture_number = self.timestamp()
-        print("Raspistill starts")
-        os.system("raspistill -f -t 3500 -o /home/pi/Downloads/" +str(capture_number) + "cam.jpg")
-        print("Raspistill done")
+        print("Recording starts")
+        # os.system("raspistill -f -t 3500 -o /home/pi/Downloads/" +str(capture_number) + "cam.jpg")
+        os.system("libcamera-vid -t 0 --qt-preview --hflip --vflip --autofocus --keypress -o %03d-"+str(capture_number)+".h264 --segment 10000 width 1920 --height 1080 & sleep 2 xdotool key alt+F11")
+
+    def stopRecording(self, channel):
+        print ("Button 24 event callback")
+        os.system("pkill libcamera-vid")
+        print("Recording stops")
 
     def picture_left(self):
         if (self.picture_index == 0):

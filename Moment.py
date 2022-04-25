@@ -44,25 +44,22 @@ class Moment:
         host = socket.gethostname()
         ssid = os.popen("iwgetid -r").read().split()
         
+        text0 = Text(self.app, color="white", grid=[
+                     1, 0], text="- Moment -", size=30)
 
-        text0 = Text(self.app, color="white", grid=[1, 0], text="- Moment -")
-
-        button1 = PushButton(self.app, grid=[3, 1], width=110, height=110, pady=35,
-                             padx=10, image="/home/pi/Moment/icon/prev.png", command=self.long_preview)
+        # button1 = PushButton(self.app, grid=[3, 1], width=110, height=110, pady=35,
+        #                      padx=10, image="/home/pi/Moment/icon/prev.png", command=self.long_preview)
         text1 = Text(self.app, color="white", grid=[
-                     3, 2], text="Hostname: " + str(host))
+                     3, 2], text="Hostname: " + str(host), size=20)
 
-        button2 = PushButton(self.app, grid=[3, 3], width=110, height=110, pady=35,
-                             padx=10, image="/home/pi/Moment/icon/gallery.png", command=self.show_gallery)
-        text2 = Text(self.app, color="white", grid=[3, 4], text="IP: " + str(ipaddr))
+        text2 = Text(self.app, color="white", grid=[
+                     3, 4], text="IP: " + str(ipaddr), size=22)
 
-        button3 = PushButton(self.app, grid=[3, 5], width=110, height=110,  pady=35,
-                             padx=10, image="/home/pi/Moment/icon/vid.png", command=self.video_capture)
-        text2 = Text(self.app, color="white", grid=[3, 6], text="GW: " + str(gateway))
+        text3 = Text(self.app, color="white", grid=[
+                     3, 6], text="GW: " + str(gateway), size=24)
 
-        button4 = PushButton(self.app, grid=[3, 7], width=110, height=110, pady=35,
-                             padx=10, image="/home/pi/Moment/icon/lapse.png", command=self.burst)
-        text3 = Text(self.app, color="white", grid=[3, 8], text="SSID:" + str(ssid))
+        text4 = Text(self.app, color="white", grid=[
+                     3, 8], text="SSID:" + str(ssid), size=24)
 
         self.busy = Window(self.app, bg="red",  height=175,
                            width=480, title="busy")

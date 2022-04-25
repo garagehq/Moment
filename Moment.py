@@ -42,7 +42,7 @@ class Moment:
         ipaddr = s.getsockname()[0]
         gateway = gw[2]
         host = socket.gethostname()
-        ssid = os.popen("iwgetid -r").read().split()
+        ssid = os.popen("iwgetid -r").read()
         
         text0 = Text(self.app, color="white", grid=[
                      1, 0], text="- Moment -", size=30)
@@ -50,16 +50,16 @@ class Moment:
         # button1 = PushButton(self.app, grid=[3, 1], width=110, height=110, pady=35,
         #                      padx=10, image="/home/pi/Moment/icon/prev.png", command=self.long_preview)
         text1 = Text(self.app, color="white", grid=[
-                     3, 2], text="Hostname: " + str(host), size=20)
+                     2, 2], text="HOSTNAME:" + str(host), size=28)
 
         text2 = Text(self.app, color="white", grid=[
-                     3, 4], text="IP: " + str(ipaddr), size=22)
+                     2, 4], text="IP:" + str(ipaddr), size=28)
 
         text3 = Text(self.app, color="white", grid=[
-                     3, 6], text="GW: " + str(gateway), size=24)
+                     2, 6], text="GW:" + str(gateway), size=28)
 
         text4 = Text(self.app, color="white", grid=[
-                     3, 8], text="SSID:" + str(ssid), size=24)
+                     2, 8], text="SSID:" + str(ssid), size=28)
 
         self.busy = Window(self.app, bg="red",  height=175,
                            width=480, title="busy")

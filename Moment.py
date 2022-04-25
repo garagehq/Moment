@@ -2,7 +2,7 @@
 
 from guizero import App, PushButton, Text, Picture, Window
 from time import sleep
- import glob
+import glob
 import datetime
 import sys
 import os

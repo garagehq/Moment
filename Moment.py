@@ -42,44 +42,27 @@ class Moment:
         ipaddr = s.getsockname()[0]
         gateway = gw[2]
         host = socket.gethostname()
-        print ("IP:", ipaddr, " GW:", gateway, " Host:", host)
-        ssid = os.popen("iwgetid - r").read().split()
+        ssid = os.popen("iwgetid -r").read().split()
         
 
         text0 = Text(self.app, color="white", grid=[1, 0], text="- Moment -")
 
-        button1 = PushButton(self.app, grid=[1, 1], width=110, height=110, pady=35,
+        button1 = PushButton(self.app, grid=[3, 1], width=110, height=110, pady=35,
                              padx=10, image="/home/pi/Moment/icon/prev.png", command=self.long_preview)
         text1 = Text(self.app, color="white", grid=[
-                     1, 2], text="Hostname: " + str(host))
+                     3, 2], text="Hostname: " + str(host))
 
-        button2 = PushButton(self.app, grid=[3, 1], width=110, height=110, pady=35,
+        button2 = PushButton(self.app, grid=[3, 3], width=110, height=110, pady=35,
                              padx=10, image="/home/pi/Moment/icon/gallery.png", command=self.show_gallery)
-        text2 = Text(self.app, color="white", grid=[3, 2], text="IP: " + str(ipaddr))
+        text2 = Text(self.app, color="white", grid=[3, 4], text="IP: " + str(ipaddr))
 
-        button3 = PushButton(self.app, grid=[5, 1], width=110, height=110,  pady=35,
+        button3 = PushButton(self.app, grid=[3, 5], width=110, height=110,  pady=35,
                              padx=10, image="/home/pi/Moment/icon/vid.png", command=self.video_capture)
-        text2 = Text(self.app, color="white", grid=[5, 2], text="GW: " + str(gateway))
+        text2 = Text(self.app, color="white", grid=[3, 6], text="GW: " + str(gateway))
 
-        button4 = PushButton(self.app, grid=[7, 1], width=110, height=110, pady=35,
+        button4 = PushButton(self.app, grid=[3, 7], width=110, height=110, pady=35,
                              padx=10, image="/home/pi/Moment/icon/lapse.png", command=self.burst)
-        text3 = Text(self.app, color="white", grid=[7, 2], text="SSID:" + str(ssid))
-
-        button5 = PushButton(self.app, grid=[
-                             1, 3], width=110, height=110, image="/home/pi/Moment/icon/self.png", command=self.lapse)
-        text4 = Text(self.app, color="white", grid=[1, 4], text="1h 60pix")
-
-        button6 = PushButton(self.app, grid=[
-                             3, 3], width=110, height=110, image="/home/pi/Moment/icon/long.png", command=self.split_hd_30m)
-        text2 = Text(self.app, color="white", grid=[3, 4], text="HD 30m in 5s")
-
-        button7 = PushButton(self.app, grid=[
-                             5, 3], width=110, height=110, image="/home/pi/Moment/icon/drop.png", command=self.upload)
-        text3 = Text(self.app, color="white", grid=[5, 4], text="Upload")
-
-        button8 = PushButton(self.app, grid=[
-                             7, 3], width=110, height=110, image="/home/pi/Moment/icon/del.png", command=self.clear)
-        text4 = Text(self.app, color="white", grid=[7, 4], text="Clear Folder")
+        text3 = Text(self.app, color="white", grid=[3, 8], text="SSID:" + str(ssid))
 
         self.busy = Window(self.app, bg="red",  height=175,
                            width=480, title="busy")

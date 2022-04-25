@@ -33,7 +33,7 @@ class Moment:
             24, GPIO.FALLING, callback=self.recordingControl, bouncetime=2500)
 
         self.app = App(layout="grid", title="Camera Controls",
-                       bg="black", width=240, height=240)
+                       bg="black", width=480, height=480)
 
         # Configure the Directory for the Videos
         os.system("rm -rf " + self.config_recordinglocation + "*")
@@ -49,22 +49,22 @@ class Moment:
         ssid = os.popen("iwgetid -r").read()
         
         debugText = Text(self.app, color="white", grid=[
-            0, 0], text="Network Information", size=30)
+            0, 0], text="Network Information", size=28)
 
         hostText = Text(self.app, color="white", grid=[
-                     0, 1], text="HOST:" + str(host), size=30)
+                     0, 1], text="HOST:" + str(host), size=28)
 
         ipText = Text(self.app, color="white", grid=[
-                     0, 2], text="IP:" + str(ipaddr), size=30)
+                     0, 2], text="IP:" + str(ipaddr), size=28)
 
         gatewayText = Text(self.app, color="white", grid=[
-                     0, 3], text="GW:" + str(gateway), size=30)
+                     0, 3], text="GW:" + str(gateway), size=28)
 
         ssidText = Text(self.app, color="white", grid=[
-                     0, 4], text="SSID:" + str(ssid), size=30)
+                     0, 4], text="SSID:" + str(ssid), size=28)
         
         configText = Text(self.app, color="white", grid=[
-            0, 5], text="CONFIG: http://" + str(ipaddr) + ":8080", size=24)
+            0, 5], text="CONFIG: http://" + str(ipaddr) + ":8080", size=20)
 
 
         self.busy = Window(self.app, bg="red",  height=240,

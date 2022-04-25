@@ -2,8 +2,7 @@
 
 from guizero import App, PushButton, Text, Picture, Window
 from time import sleep
-import time
-import glob
+ import glob
 import datetime
 import sys
 import os
@@ -20,7 +19,7 @@ class Moment:
         self.saved_pictures = []
         self.shown_picture = ""
         self.recording = False
-        self.config_recordinglocation = "/home/pi/Videos/*"
+        self.config_recordinglocation = "/home/pi/Videos/"
 
 
         GPIO.setwarnings(False)  # Ignore warning for now
@@ -28,7 +27,7 @@ class Moment:
         GPIO.setup(23, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(24, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.add_event_detect(
-            23, GPIO.FALLING, callback=self.processVideo, bouncetime=2500)
+            23, GPIO.FALLING, callback=self.uploadVideo, bouncetime=2500)
         GPIO.add_event_detect(
             24, GPIO.FALLING, callback=self.recordingControl, bouncetime=2500)
 
@@ -49,22 +48,25 @@ class Moment:
         ssid = os.popen("iwgetid -r").read()
         
         debugText = Text(self.app, color="white", grid=[
-            0, 0], text="Network Information", size=28)
+            0, 0], text="Network Information", size=29)
 
         hostText = Text(self.app, color="white", grid=[
-                     0, 1], text="HOST:" + str(host), size=28)
+            0, 1], text="HOST:" + str(host), size=29)
 
         ipText = Text(self.app, color="white", grid=[
-                     0, 2], text="IP:" + str(ipaddr), size=28)
+            0, 2], text="IP:" + str(ipaddr), size=29)
 
         gatewayText = Text(self.app, color="white", grid=[
-                     0, 3], text="GW:" + str(gateway), size=28)
+            0, 3], text="GW:" + str(gateway), size=29)
 
         ssidText = Text(self.app, color="white", grid=[
-                     0, 4], text="SSID:" + str(ssid), size=28)
+            0, 4], text="SSID:" + str(ssid), size=29)
         
         configText = Text(self.app, color="white", grid=[
-            0, 5], text="CONFIG: http://" + str(ipaddr) + ":8080", size=20)
+            0, 5], text="CONFIG:", size=20)
+
+        configTextIP = Text(self.app, color="white", grid=[
+            0, 6], text="http://" + str(ipaddr) + ":80", size=20)
 
 
         self.busy = Window(self.app, bg="red",  height=240,
@@ -73,13 +75,6 @@ class Moment:
         self.app.tk.attributes("-fullscreen", True)
         self.busy.hide()
         self.app.display()
-        sleep(4)
-        self.recording = True
-        capture_number = self.timestamp()
-        command_execute = Popen(
-            "libcamera-vid -t 0 --qt-preview --hflip --vflip --autofocus --keypress -o /home/pi/Videos/%03d-"+str(capture_number)+".h264 --segment 10000 width 1920 --height 1080 ", stdout=PIPE, stdin=PIPE, stderr=STDOUT, shell=True, close_fds=True)
-        sleep(2)
-        Popen("xdotool key alt+F11", shell=True)
 
     def clear(self):
         self.show_busy()
@@ -122,10 +117,24 @@ class Moment:
             os.system("pkill libcamera-vid")
             self.recording = False
 
+    def uploadVideo(self, channel):
+        GPIO.remove_event_detect(23)
+        if self.recording == True:
+            print("Recording stops in order to Upload the Video")
+            os.system("pkill libcamera-vid")
+            self.recording = False
+        else:
+            print("Uploading Video")
+        GPIO.add_event_detect(
+            23, GPIO.FALLING, callback=self.uploadVideo, bouncetime=2500)
+
     def processVideo(self, channel):
-        print("Recording stops in order to Process the Video")
-        os.system("pkill libcamera-vid")
-        self.recording = False
+        if self.recording == True:
+            print("Recording stops in order to Process the Video")
+            os.system("pkill libcamera-vid")
+            self.recording = False
+        else:
+            print("Process Video")
         # TODO: ffmpeg commands to process the video footage
 
     def picture_left(self):
@@ -145,8 +154,8 @@ class Moment:
             self.gallery, width=360, height=270, image=self.shown_picture, grid=[1, 0])
 
     def show_gallery(self):
-        self.gallery = Window(self.app, bg="white", height=300,
-                              width=460, layout="grid", title="Gallery")
+        self.gallery = Window(self.app, bg="white", height=480,
+                              width=480, layout="grid", title="Gallery")
         self.saved_pictures = glob.glob('/home/pi/Downloads/*.jpg')
         self.shown_picture = self.saved_pictures[self.picture_index]
         button_left = PushButton(self.gallery, grid=[

@@ -43,11 +43,7 @@ class Moment:
         host = socket.gethostname()
         ssid = os.popen("iwgetid -r").read()
         
-        # text0 = Text(self.app, color="white", grid=[
-        #              1, 0], text="- Moment -", size=30)
 
-        # button1 = PushButton(self.app, grid=[3, 1], width=110, height=110, pady=35,
-        #                      padx=10, image="/home/pi/Moment/icon/prev.png", command=self.long_preview)
         text1 = Text(self.app, color="white", grid=[
                      2, 1], text="HOST:" + str(host), size=28)
 
@@ -138,25 +134,26 @@ class Moment:
         self.hide_busy()
 
     def recordingControl(self, channel):
+        print("Recording Control called")
         if self.recording == False:
+            print("Recording started")
             self.recording = True
             capture_number = self.timestamp()
-            print("Recording starts")
             command_execute = Popen(
                 "libcamera-vid -t 0 --qt-preview --hflip --vflip --autofocus --keypress -o /home/pi/Videos/%03d-"+str(capture_number)+".h264 --segment 10000 width 1920 --height 1080 ", stdout=PIPE, stdin=PIPE, stderr=STDOUT, shell=True, close_fds=True)
             # stdout, stderr = command_execute.communicate()
             sleep(2)
             Popen("xdotool key alt+F11", shell=True)
         else:
+            print("Recording stops")
             os.system("pkill libcamera-vid")
             self.recording = False
 
     def processVideo(self, channel):
+        print("Recording stops in order to Process the Video")
         os.system("pkill libcamera-vid")
         self.recording = False
-        print("Recording stops")
         # TODO: ffmpeg commands to process the video footage
-        print("Process Video")
 
     def picture_left(self):
         if (self.picture_index == 0):

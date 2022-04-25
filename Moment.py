@@ -33,7 +33,7 @@ class Moment:
             24, GPIO.FALLING, callback=self.recordingControl, bouncetime=2500)
 
         self.app = App(layout="grid", title="Camera Controls",
-                       bg="black", width=480, height=480)
+                       bg="black", width=240, height=240)
 
         # Configure the Directory for the Videos
         os.system("rm -rf " + self.config_recordinglocation + "*")
@@ -49,7 +49,7 @@ class Moment:
         ssid = os.popen("iwgetid -r").read()
         
         debugText = Text(self.app, color="white", grid=[
-            0, 0], text="Network Information", size=32)
+            0, 0], text="Network Information", size=30)
 
         hostText = Text(self.app, color="white", grid=[
                      0, 1], text="HOST:" + str(host), size=30)
@@ -64,11 +64,11 @@ class Moment:
                      0, 4], text="SSID:" + str(ssid), size=30)
         
         configText = Text(self.app, color="white", grid=[
-            0, 5], text="CONFIG: http://" + str(ipaddr) + ":8080", size=28)
+            0, 5], text="CONFIG: http://" + str(ipaddr) + ":8080", size=24)
 
 
-        self.busy = Window(self.app, bg="red",  height=480,
-                           width=480, title="busy")
+        self.busy = Window(self.app, bg="red",  height=240,
+                           width=240, title="busy")
 
         self.app.tk.attributes("-fullscreen", True)
         self.busy.hide()

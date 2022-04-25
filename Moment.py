@@ -7,6 +7,7 @@ import glob
 import datetime
 import sys
 import os
+import socket
 from subprocess import PIPE, STDOUT, Popen, check_output, call
 import subprocess
 import RPi.GPIO as GPIO  # Import Raspberry Pi GPIO library
@@ -34,23 +35,35 @@ class Moment:
         self.app = App(layout="grid", title="Camera Controls",
                        bg="black", width=480, height=320)
 
+       
+        gw = os.popen("ip -4 route show default").read().split()
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect((gw[2], 0))
+        ipaddr = s.getsockname()[0]
+        gateway = gw[2]
+        host = socket.gethostname()
+        print ("IP:", ipaddr, " GW:", gateway, " Host:", host)
+        ssid = os.popen("iwgetid - r").read().split()
+        
+
         text0 = Text(self.app, color="white", grid=[1, 0], text="- Moment -")
 
         button1 = PushButton(self.app, grid=[1, 1], width=110, height=110, pady=35,
                              padx=10, image="/home/pi/Moment/icon/prev.png", command=self.long_preview)
-        text1 = Text(self.app, color="white", grid=[1, 2], text="Focus")
+        text1 = Text(self.app, color="white", grid=[
+                     1, 2], text="Hostname: " + str(host))
 
         button2 = PushButton(self.app, grid=[3, 1], width=110, height=110, pady=35,
                              padx=10, image="/home/pi/Moment/icon/gallery.png", command=self.show_gallery)
-        text2 = Text(self.app, color="white", grid=[3, 2], text="Gallery")
+        text2 = Text(self.app, color="white", grid=[3, 2], text="IP: " + str(ipaddr))
 
         button3 = PushButton(self.app, grid=[5, 1], width=110, height=110,  pady=35,
                              padx=10, image="/home/pi/Moment/icon/vid.png", command=self.video_capture)
-        text2 = Text(self.app, color="white", grid=[5, 2], text="HD 30s")
+        text2 = Text(self.app, color="white", grid=[5, 2], text="GW: " + str(gateway))
 
         button4 = PushButton(self.app, grid=[7, 1], width=110, height=110, pady=35,
                              padx=10, image="/home/pi/Moment/icon/lapse.png", command=self.burst)
-        text3 = Text(self.app, color="white", grid=[7, 2], text="Burst")
+        text3 = Text(self.app, color="white", grid=[7, 2], text="SSID:" + str(ssid))
 
         button5 = PushButton(self.app, grid=[
                              1, 3], width=110, height=110, image="/home/pi/Moment/icon/self.png", command=self.lapse)
@@ -162,6 +175,8 @@ class Moment:
     def processVideo(self, channel):
         print("Button 24 event callback")
         os.system("pkill libcamera-vid")
+        self.recording = False
+        print("Recording stops")
         # TODO: ffmpeg commands to process the video footage
         print("Process Video")
 

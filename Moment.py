@@ -26,14 +26,14 @@ class Moment:
         GPIO.setmode(GPIO.BCM)     # set up BCM GPIO numbering
         GPIO.setup(23, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.add_event_detect(
-            23, GPIO.FALLING, callback=self.recordingControl, bouncetime=2500)
+            24, GPIO.FALLING, callback=self.recordingControl, bouncetime=2500)
 
         GPIO.setup(24, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.add_event_detect(
-            24, GPIO.FALLING, callback=self.processVideo, bouncetime=2500)
+            23, GPIO.FALLING, callback=self.processVideo, bouncetime=2500)
 
         self.app = App(layout="grid", title="Camera Controls",
-                       bg="black", width=480, height=320)
+                       bg="black", width=480, height=480)
 
        
         gw = os.popen("ip -4 route show default").read().split()
@@ -50,7 +50,7 @@ class Moment:
         # button1 = PushButton(self.app, grid=[3, 1], width=110, height=110, pady=35,
         #                      padx=10, image="/home/pi/Moment/icon/prev.png", command=self.long_preview)
         text1 = Text(self.app, color="white", grid=[
-                     2, 1], text="HOSTNAME:" + str(host), size=28)
+                     2, 1], text="HOST:" + str(host), size=28)
 
         text2 = Text(self.app, color="white", grid=[
                      2, 2], text="IP:" + str(ipaddr), size=28)
@@ -61,13 +61,15 @@ class Moment:
         text4 = Text(self.app, color="white", grid=[
                      2, 4], text="SSID:" + str(ssid), size=28)
 
-        self.busy = Window(self.app, bg="red",  height=175,
+        self.busy = Window(self.app, bg="red",  height=480,
                            width=480, title="busy")
 
         self.app.tk.attributes("-fullscreen", True)
         self.busy.hide()
         os.system("rm -rf /home/pi/Videos/*")
         self.app.display()
+        sleep(5)
+        self.recordingControl()
 
     def clear(self):
         self.show_busy()
@@ -137,7 +139,6 @@ class Moment:
         self.hide_busy()
 
     def recordingControl(self, channel):
-        print("Button 23 event callback")
         if self.recording == False:
             self.recording = True
             capture_number = self.timestamp()
@@ -149,11 +150,9 @@ class Moment:
             Popen("xdotool key alt+F11", shell=True)
         else:
             os.system("pkill libcamera-vid")
-            print("Recording stops")
             self.recording = False
 
     def processVideo(self, channel):
-        print("Button 24 event callback")
         os.system("pkill libcamera-vid")
         self.recording = False
         print("Recording stops")

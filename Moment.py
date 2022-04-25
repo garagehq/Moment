@@ -25,12 +25,11 @@ class Moment:
         GPIO.setwarnings(False)  # Ignore warning for now
         GPIO.setmode(GPIO.BCM)     # set up BCM GPIO numbering
         GPIO.setup(23, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.add_event_detect(
-            24, GPIO.FALLING, callback=self.recordingControl, bouncetime=2500)
-
         GPIO.setup(24, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.add_event_detect(
             23, GPIO.FALLING, callback=self.processVideo, bouncetime=2500)
+        GPIO.add_event_detect(
+            24, GPIO.FALLING, callback=self.recordingControl, bouncetime=2500)
 
         self.app = App(layout="grid", title="Camera Controls",
                        bg="black", width=480, height=480)

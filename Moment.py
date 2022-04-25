@@ -48,7 +48,7 @@ class Moment:
         ssid = os.popen("iwgetid -r").read()
         
         debugText = Text(self.app, color="white", grid=[
-            0, 0], text="Network Information", size=29)
+            0, 0], text="Network Information", size=40)
 
         hostText = Text(self.app, color="white", grid=[
             0, 1], text="HOST:" + str(host), size=29)
@@ -63,10 +63,10 @@ class Moment:
             0, 4], text="SSID:" + str(ssid), size=29)
         
         configText = Text(self.app, color="white", grid=[
-            0, 5], text="CONFIG:", size=20)
+            0, 5], text="CONFIG:", size=29)
 
         configTextIP = Text(self.app, color="white", grid=[
-            0, 6], text="http://" + str(ipaddr) + ":80", size=20)
+            0, 6], text="http://" + str(ipaddr) + ":80", size=29)
 
 
         self.busy = Window(self.app, bg="red",  height=240,

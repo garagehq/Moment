@@ -9,7 +9,6 @@ import sys
 import os
 import socket
 from subprocess import PIPE, STDOUT, Popen, check_output, call
-import subprocess
 import RPi.GPIO as GPIO  # Import Raspberry Pi GPIO library
 
 
@@ -21,6 +20,8 @@ class Moment:
         self.saved_pictures = []
         self.shown_picture = ""
         self.recording = False
+        self.config_recordinglocation = "/home/pi/Videos/*"
+
 
         GPIO.setwarnings(False)  # Ignore warning for now
         GPIO.setmode(GPIO.BCM)     # set up BCM GPIO numbering
@@ -34,7 +35,11 @@ class Moment:
         self.app = App(layout="grid", title="Camera Controls",
                        bg="black", width=480, height=480)
 
-       
+        # Configure the Directory for the Videos
+        os.system("rm -rf " + self.config_recordinglocation + "*")
+        os.system("mkdir -p " + self.config_recordinglocation)
+
+        # Pull all the Network Information
         gw = os.popen("ip -4 route show default").read().split()
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect((gw[2], 0))
@@ -43,28 +48,38 @@ class Moment:
         host = socket.gethostname()
         ssid = os.popen("iwgetid -r").read()
         
+        debugText = Text(self.app, color="white", grid=[
+            0, 0], text="Network Information", size=32)
 
-        text1 = Text(self.app, color="white", grid=[
-                     2, 1], text="HOST:" + str(host), size=28)
+        hostText = Text(self.app, color="white", grid=[
+                     0, 1], text="HOST:" + str(host), size=30)
 
-        text2 = Text(self.app, color="white", grid=[
-                     2, 2], text="IP:" + str(ipaddr), size=28)
+        ipText = Text(self.app, color="white", grid=[
+                     0, 2], text="IP:" + str(ipaddr), size=30)
 
-        text3 = Text(self.app, color="white", grid=[
-                     2, 3], text="GW:" + str(gateway), size=28)
+        gatewayText = Text(self.app, color="white", grid=[
+                     0, 3], text="GW:" + str(gateway), size=30)
 
-        text4 = Text(self.app, color="white", grid=[
-                     2, 4], text="SSID:" + str(ssid), size=28)
+        ssidText = Text(self.app, color="white", grid=[
+                     0, 4], text="SSID:" + str(ssid), size=30)
+        
+        configText = Text(self.app, color="white", grid=[
+            0, 5], text="CONFIG: http://" + str(ipaddr) + ":8080", size=28)
+
 
         self.busy = Window(self.app, bg="red",  height=480,
                            width=480, title="busy")
 
         self.app.tk.attributes("-fullscreen", True)
         self.busy.hide()
-        os.system("rm -rf /home/pi/Videos/*")
         self.app.display()
-        sleep(5)
-        self.recordingControl()
+        sleep(4)
+        self.recording = True
+        capture_number = self.timestamp()
+        command_execute = Popen(
+            "libcamera-vid -t 0 --qt-preview --hflip --vflip --autofocus --keypress -o /home/pi/Videos/%03d-"+str(capture_number)+".h264 --segment 10000 width 1920 --height 1080 ", stdout=PIPE, stdin=PIPE, stderr=STDOUT, shell=True, close_fds=True)
+        sleep(2)
+        Popen("xdotool key alt+F11", shell=True)
 
     def clear(self):
         self.show_busy()
@@ -90,48 +105,6 @@ class Moment:
         tstring = datetime.datetime.now()
         #print("Filename generated ...")
         return tstring.strftime("%Y%m%d_%H%M%S")
-
-    def burst(self):
-        self.show_busy()
-        capture_number = self.timestamp()
-        print("Raspistill starts")
-        os.system("raspistill -t 10000 -tl 0 --thumb none -n -bm -o /home/pi/Downloads/BR" +
-                  str(capture_number) + "%04d.jpg")
-        print("Raspistill done")
-        self.hide_busy()
-
-    def split_hd_30m(self):
-        self.show_busy()
-        capture_number = self.timestamp()
-        print("Raspivid starts")
-        os.system("raspivid -f -t 1800000 -sg 300000  -o /home/pi/Downloads/" +
-                  str(capture_number) + "vid%04d.h264")
-        print("done")
-        self.hide_busy()
-
-    def lapse(self):
-        self.show_busy()
-        capture_number = self.timestamp()
-        print("Raspistill timelapse starts")
-        os.system("raspistill -t 3600000 -tl 60000 --thumb none -n -bm -o /home/pi/Downloads/TL" +
-                  str(capture_number) + "%04d.jpg")
-        print("Raspistill timelapse done")
-        self.hide_busy()
-
-    def long_preview(self):
-        self.show_busy()
-        print("15 second preview")
-        os.system("raspistill -f -t 15000")
-        self.hide_busy()
-
-    def capture_image(self):
-        self.show_busy()
-        capture_number = self.timestamp()
-        print("Raspistill starts")
-        os.system("raspistill -f -o /home/pi/Downloads/" +
-                  str(capture_number) + "cam.jpg")
-        print("Raspistill done")
-        self.hide_busy()
 
     def recordingControl(self, channel):
         print("Recording Control called")
@@ -184,18 +157,9 @@ class Moment:
                                   2, 0], width=40, height=50, pady=50, padx=10, image="/home/pi/Moment/icon/right.png", command=self.picture_right)
         self.gallery.show()
 
-    def video_capture(self):
-        self.show_busy()
-        capture_number = self.timestamp()
-        print("Raspivid starts")
-        os.system("raspivid -f -t 30000 -o /home/pi/Downloads/" +
-                  str(capture_number) + "vid.h264")
-        print("done")
-        self.hide_busy()
-
     def upload(self):
         self.show_busy()
-        subprocess.Popen(["bash", "/home/pi/Moment/usb_autorun.sh", "--yes"])
+        Popen(["bash", "/home/pi/Moment/usb_autorun.sh", "--yes"])
         self.hide_busy()
 
 

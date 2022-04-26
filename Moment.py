@@ -178,7 +178,6 @@ class Moment(threading.Thread):
 
 if __name__ == '__main__':
     MomentApp = Moment()
-    MomentApp.app.display()
     MomentApp.recording = True
     capture_number = MomentApp.timestamp()
     Popen(
@@ -189,5 +188,7 @@ if __name__ == '__main__':
         shell=True, close_fds=True)
     Popen(
         "sleep 5 && xdotool key alt+F11", shell=True)
+    MomentApp.app.display()
+
     # MomentApp.run()
     # MomentApp.join()

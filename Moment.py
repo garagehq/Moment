@@ -180,14 +180,11 @@ if __name__ == '__main__':
     MomentApp = Moment()
     MomentApp.recording = True
     capture_number = MomentApp.timestamp()
-    Popen(
-        "sleep 3 && libcamera-vid -t 0 --qt-preview --hflip --vflip --autofocus --keypress -o " +
-        str(MomentApp.config_recordinglocation) + "%03d-" +
-        str(capture_number) +
-        ".h264 --segment 10000 width 1920 --height 1080 &",
-        shell=True, close_fds=True)
-    Popen(
-        "sleep 5 && xdotool key alt+F11", shell=True)
+    command_execute = Popen(
+        "libcamera-vid -t 0 --qt-preview --hflip --vflip --autofocus --keypress -o /home/pi/Videos/%03d-"+str(capture_number)+".h264 --segment 10000 width 1920 --height 1080 ", stdout=PIPE, stdin=PIPE, stderr=STDOUT, shell=True, close_fds=True)
+    # stdout, stderr = command_execute.communicate()
+    sleep(2)
+    Popen("xdotool key alt+F11", shell=True)
     MomentApp.app.display()
 
     # MomentApp.run()

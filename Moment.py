@@ -33,9 +33,9 @@ class Moment(threading.Thread):
         GPIO.setup(23, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(24, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.add_event_detect(
-            23, GPIO.FALLING, callback=self.uploadVideo, bouncetime=2500)
+            23, GPIO.FALLING, callback=self.uploadVideo, bouncetime=1000)
         GPIO.add_event_detect(
-            24, GPIO.FALLING, callback=self.recordingControl, bouncetime=2500)
+            24, GPIO.FALLING, callback=self.recordingControl, bouncetime=1000)
 
     def run(self):
         # Configure the Directory for the Videos
@@ -137,7 +137,7 @@ class Moment(threading.Thread):
         else:
             print("[DEBUG]:Uploading Video")
         GPIO.add_event_detect(
-            23, GPIO.FALLING, callback=self.uploadVideo, bouncetime=2500)
+            23, GPIO.FALLING, callback=self.uploadVideo, bouncetime=1000)
 
     def processVideo(self, channel):
         if self.recording == True:

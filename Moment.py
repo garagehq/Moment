@@ -25,6 +25,7 @@ class Moment(threading.Thread):
         self.busy = Window(self.app, bg="red",  height=240,
                            width=240, title="busy")
         self.app.tk.attributes("-fullscreen", True)
+        self.app.tk.config(cursor="none")
 
         GPIO.setwarnings(False)  # Ignore warning for now
         GPIO.setmode(GPIO.BCM)     # set up BCM GPIO numbering
@@ -34,9 +35,8 @@ class Moment(threading.Thread):
             23, GPIO.FALLING, callback=self.uploadVideo, bouncetime=2500)
         GPIO.add_event_detect(
             24, GPIO.FALLING, callback=self.recordingControl, bouncetime=2500)
-        threading.Thread.__init__(self)
 
-    def run(self):
+    # def run(self):
         capture_number = self.timestamp()
         self.recording = True
         Popen(
@@ -184,5 +184,5 @@ class Moment(threading.Thread):
 
 if __name__ == '__main__':
     MomentApp = Moment()
-    MomentApp.start()
-    MomentApp.join()
+    MomentApp.run()
+    # MomentApp.join()

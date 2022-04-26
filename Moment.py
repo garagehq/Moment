@@ -89,7 +89,7 @@ class Moment(threading.Thread):
         sleep(2)
         Popen("xdotool key alt+F11", shell=True)
 
-    def cmd_Startbtn(self):
+    def cmd_StartBtn(self):
         # start_video_button.disable()
         t = threading.Thread(target=self.doit)
         t.start()

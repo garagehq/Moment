@@ -37,17 +37,10 @@ class Moment(threading.Thread):
         GPIO.add_event_detect(
             24, GPIO.FALLING, callback=self.recordingControl, bouncetime=2500)
 
-    def run(self):
-        capture_number = self.timestamp()
+    # def run(self):
+        # capture_number = self.timestamp()
         self.recording = True
-        Popen(
-            "sleep 3 && libcamera-vid -t 0 --qt-preview --hflip --vflip --autofocus --keypress -o " +
-            str(self.config_recordinglocation) + "%03d-" +
-            str(capture_number) +
-            ".h264 --segment 10000 width 1920 --height 1080 &",
-            shell=True, close_fds=True)
-        Popen(
-            "sleep 5 && xdotool key alt+F11", shell=True)
+
 
         # Configure the Directory for the Videos
         os.system("rm -rf " + self.config_recordinglocation + "*")
@@ -57,35 +50,35 @@ class Moment(threading.Thread):
         gw = os.popen("ip -4 route show default").read().split()
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect((gw[2], 0))
-        ipaddr = s.getsockname()[0]
-        gateway = gw[2]
-        host = socket.gethostname()
-        ssid = os.popen("iwgetid -r").read()
+        self.ipaddr = s.getsockname()[0]
+        self.gateway = gw[2]
+        self.host = socket.gethostname()
+        self.ssid = os.popen("iwgetid -r").read()
         
         debugText = Text(self.app, color="white", grid=[
             0, 0], text="Network Information", size=40)
 
         hostText = Text(self.app, color="white", grid=[
-            0, 1], text="HOST:" + str(host), size=29)
+            0, 1], text="HOST:" + str(self.host), size=29)
 
         ipText = Text(self.app, color="white", grid=[
-            0, 2], text="IP:" + str(ipaddr), size=29)
+            0, 2], text="IP:" + str(self.ipaddr), size=29)
 
         gatewayText = Text(self.app, color="white", grid=[
-            0, 3], text="GW:" + str(gateway), size=29)
+            0, 3], text="GW:" + str(self.gateway), size=29)
 
         ssidText = Text(self.app, color="white", grid=[
-            0, 4], text="SSID:" + str(ssid), size=29)
+            0, 4], text="SSID:" + str(self.ssid), size=29)
         
         configText = Text(self.app, color="white", grid=[
             0, 5], text="CONFIG:", size=29)
 
         configTextIP = Text(self.app, color="white", grid=[
-            0, 6], text="http://" + str(ipaddr) + ":80", size=29)
+            0, 6], text="http://" + str(self.ipaddr) + ":80", size=29)
 
         self.busy.hide()
         
-        self.app.display()
+        # self.app.display()
 
     def clear(self):
         self.show_busy()
@@ -185,6 +178,16 @@ class Moment(threading.Thread):
 
 if __name__ == '__main__':
     MomentApp = Moment()
-    MomentApp.mainloop()
+    MomentApp.app.display()
+    MomentApp.recording = True
+    capture_number = MomentApp.timestamp()
+    Popen(
+        "sleep 3 && libcamera-vid -t 0 --qt-preview --hflip --vflip --autofocus --keypress -o " +
+        str(MomentApp.config_recordinglocation) + "%03d-" +
+        str(capture_number) +
+        ".h264 --segment 10000 width 1920 --height 1080 &",
+        shell=True, close_fds=True)
+    Popen(
+        "sleep 5 && xdotool key alt+F11", shell=True)
     # MomentApp.run()
     # MomentApp.join()

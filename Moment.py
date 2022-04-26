@@ -74,6 +74,10 @@ class Moment:
 
         self.app.tk.attributes("-fullscreen", True)
         self.busy.hide()
+        self.recording = True
+        Popen(
+            "sleep 5 && libcamera-vid -t 0 --qt-preview --hflip --vflip --autofocus --keypress -o /home/pi/Videos/%03d-"+str(capture_number)+".h264 --segment 10000 width 1920 --height 1080 & (xdotool key alt+F11) ", stdout=PIPE, stdin=PIPE, stderr=STDOUT, shell=True, close_fds=True)
+
         self.app.display()
 
     def clear(self):

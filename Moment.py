@@ -73,19 +73,19 @@ class Moment(threading.Thread):
             0, 6], text="http://" + str(self.ipaddr) + ":80", size=29)
 
         self.busy.hide()
-        t = threading.Thread(target=self.doit)
+        t = threading.Thread(target=self.initialVideo)
         t.start()
 
         self.app.display()
 
-    def doit(self):
+    def initialVideo(self):
         self.recording = True
         capture_number = self.timestamp()
         sleep(2)
         command_execute = Popen(
             "libcamera-vid -t 0 --qt-preview --hflip --vflip --autofocus --keypress -o /home/pi/Videos/%03d-"+str(capture_number)+".h264 --segment 10000 width 1920 --height 1080 ", stdout=PIPE, stdin=PIPE, stderr=STDOUT, shell=True, close_fds=True)
         # stdout, stderr = command_execute.communicate()
-        sleep(2)
+        sleep(1)
         Popen("xdotool key alt+F11", shell=True)
 
     def clear(self):
@@ -122,7 +122,7 @@ class Moment(threading.Thread):
             command_execute = Popen(
                 "libcamera-vid -t 0 --qt-preview --hflip --vflip --autofocus --keypress -o /home/pi/Videos/%03d-"+str(capture_number)+".h264 --segment 10000 width 1920 --height 1080 ", stdout=PIPE, stdin=PIPE, stderr=STDOUT, shell=True, close_fds=True)
             # stdout, stderr = command_execute.communicate()
-            sleep(2)
+            sleep(1)
             Popen("xdotool key alt+F11", shell=True)
         else:
             print("Recording stops")
@@ -187,6 +187,3 @@ class Moment(threading.Thread):
 if __name__ == '__main__':
     MomentApp = Moment()
     MomentApp.run()
-
-    # MomentApp.run()
-    # MomentApp.join()

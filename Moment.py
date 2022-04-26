@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from guizero import App, PushButton, Text, Picture, Window
+from guizero import App, PushButton, Text, Picture, Window, PushButton
 from time import sleep
 import glob
 import datetime

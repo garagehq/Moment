@@ -13,6 +13,7 @@ import threading
 
 class Moment(threading.Thread):
     def __init__(self):
+        super().__init__()
         self.capture_number = self.timestamp()
         self.video_capture_number = self.timestamp()
         self.picture_index = 0
@@ -36,7 +37,7 @@ class Moment(threading.Thread):
         GPIO.add_event_detect(
             24, GPIO.FALLING, callback=self.recordingControl, bouncetime=2500)
 
-    # def run(self):
+    def run(self):
         capture_number = self.timestamp()
         self.recording = True
         Popen(
@@ -184,5 +185,6 @@ class Moment(threading.Thread):
 
 if __name__ == '__main__':
     MomentApp = Moment()
-    MomentApp.run()
+    MomentApp.mainloop()
+    # MomentApp.run()
     # MomentApp.join()

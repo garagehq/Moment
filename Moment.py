@@ -9,9 +9,9 @@ import os
 import socket
 from subprocess import PIPE, STDOUT, Popen, check_output, call
 import RPi.GPIO as GPIO  # Import Raspberry Pi GPIO library
+import threading
 
-
-class Moment:
+class Moment(threading.Thread):
     def __init__(self):
         self.capture_number = self.timestamp()
         self.video_capture_number = self.timestamp()
@@ -20,6 +20,11 @@ class Moment:
         self.shown_picture = ""
         self.recording = False
         self.config_recordinglocation = "/home/pi/Videos/"
+        self.app = App(layout="grid", title="Camera Controls",
+                       bg="black", width=480, height=480)
+        self.busy = Window(self.app, bg="red",  height=240,
+                           width=240, title="busy")
+        self.app.tk.attributes("-fullscreen", True)
 
         GPIO.setwarnings(False)  # Ignore warning for now
         GPIO.setmode(GPIO.BCM)     # set up BCM GPIO numbering
@@ -29,9 +34,19 @@ class Moment:
             23, GPIO.FALLING, callback=self.uploadVideo, bouncetime=2500)
         GPIO.add_event_detect(
             24, GPIO.FALLING, callback=self.recordingControl, bouncetime=2500)
+        threading.Thread.__init__(self)
 
-        self.app = App(layout="grid", title="Camera Controls",
-                       bg="black", width=480, height=480)
+    def run(self):
+        capture_number = self.timestamp()
+        self.recording = True
+        Popen(
+            "sleep 3 && libcamera-vid -t 0 --qt-preview --hflip --vflip --autofocus --keypress -o " +
+            str(MomentApp.config_recordinglocation) + "%03d-" +
+            str(capture_number) +
+            ".h264 --segment 10000 width 1920 --height 1080 &",
+            shell=True, close_fds=True)
+        Popen(
+            "sleep 5 && xdotool key alt+F11", shell=True)
 
         # Configure the Directory for the Videos
         os.system("rm -rf " + self.config_recordinglocation + "*")
@@ -67,15 +82,8 @@ class Moment:
         configTextIP = Text(self.app, color="white", grid=[
             0, 6], text="http://" + str(ipaddr) + ":80", size=29)
 
-
-        self.busy = Window(self.app, bg="red",  height=240,
-                           width=240, title="busy")
-
-        self.app.tk.attributes("-fullscreen", True)
         self.busy.hide()
         
-        self.recording = True
-
         self.app.display()
 
     def clear(self):
@@ -176,14 +184,5 @@ class Moment:
 
 if __name__ == '__main__':
     MomentApp = Moment()
-    MomentApp.run()
-    
-    capture_number = MomentApp.timestamp()
-    MomentApp.video = Popen(
-        "sleep 3 && libcamera-vid -t 0 --qt-preview --hflip --vflip --autofocus --keypress -o " +
-        str(MomentApp.config_recordinglocation) + "%03d-" +
-        str(capture_number) +
-        ".h264 --segment 10000 width 1920 --height 1080 &",
-        shell=True, close_fds=True)
-    MomentApp.fullscreen_video = Popen(
-        "sleep 5 && xdotool key alt+F11", shell=True)
+    MomentApp.start()
+    MomentApp.join()

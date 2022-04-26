@@ -21,16 +21,6 @@ class Moment:
         self.recording = False
         self.config_recordinglocation = "/home/pi/Videos/"
 
-        capture_number = self.timestamp()
-        self.video = Popen(
-            "sleep 3 && libcamera-vid -t 0 --qt-preview --hflip --vflip --autofocus --keypress -o " +
-            str(self.config_recordinglocation) + "%03d-" +
-            str(capture_number) +
-            ".h264 --segment 10000 width 1920 --height 1080 &",
-            shell=True, close_fds=True)
-        self.fullscreen_video = Popen(
-            "sleep 5 && xdotool key alt+F11", shell=True)
-            
         GPIO.setwarnings(False)  # Ignore warning for now
         GPIO.setmode(GPIO.BCM)     # set up BCM GPIO numbering
         GPIO.setup(23, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -185,5 +175,15 @@ class Moment:
 
 
 if __name__ == '__main__':
-    standalone_app = Moment()
-    standalone_app.run()
+    MomentApp = Moment()
+    MomentApp.run()
+    
+    capture_number = MomentApp.timestamp()
+    MomentApp.video = Popen(
+        "sleep 3 && libcamera-vid -t 0 --qt-preview --hflip --vflip --autofocus --keypress -o " +
+        str(MomentApp.config_recordinglocation) + "%03d-" +
+        str(capture_number) +
+        ".h264 --segment 10000 width 1920 --height 1080 &",
+        shell=True, close_fds=True)
+    MomentApp.fullscreen_video = Popen(
+        "sleep 5 && xdotool key alt+F11", shell=True)

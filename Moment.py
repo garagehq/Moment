@@ -41,7 +41,7 @@ class Moment(threading.Thread):
         self.recording = True
         Popen(
             "sleep 3 && libcamera-vid -t 0 --qt-preview --hflip --vflip --autofocus --keypress -o " +
-            str(MomentApp.config_recordinglocation) + "%03d-" +
+            str(self.config_recordinglocation) + "%03d-" +
             str(capture_number) +
             ".h264 --segment 10000 width 1920 --height 1080 &",
             shell=True, close_fds=True)

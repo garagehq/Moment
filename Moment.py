@@ -192,7 +192,7 @@ class Moment(threading.Thread):
 
 if __name__ == '__main__':
     MomentApp = Moment()
-    MomentApp.app.run()
+    MomentApp.run()
 
     # MomentApp.run()
     # MomentApp.join()

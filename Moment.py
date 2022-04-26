@@ -38,7 +38,6 @@ class Moment(threading.Thread):
             24, GPIO.FALLING, callback=self.recordingControl, bouncetime=2500)
 
     def run(self):
-
         # Configure the Directory for the Videos
         os.system("rm -rf " + self.config_recordinglocation + "*")
         os.system("mkdir -p " + self.config_recordinglocation)
@@ -74,8 +73,8 @@ class Moment(threading.Thread):
             0, 6], text="http://" + str(self.ipaddr) + ":80", size=29)
 
         self.busy.hide()
-        start_video_button = PushButton(
-            self.app, text="Start", command=self.cmd_StartBtn)
+        t = threading.Thread(target=self.doit)
+        t.start()
 
         self.app.display()
 
@@ -88,11 +87,6 @@ class Moment(threading.Thread):
         # stdout, stderr = command_execute.communicate()
         sleep(2)
         Popen("xdotool key alt+F11", shell=True)
-
-    def cmd_StartBtn(self):
-        # start_video_button.disable()
-        t = threading.Thread(target=self.doit)
-        t.start()
 
     def clear(self):
         self.show_busy()

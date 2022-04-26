@@ -14,6 +14,9 @@ import threading
 class Moment(threading.Thread):
     def __init__(self):
         super().__init__()
+        # Move Cursor out the way
+        Popen("xdotool mousemove 480 480", shell=True)
+
         self.capture_number = self.timestamp()
         self.video_capture_number = self.timestamp()
         self.picture_index = 0
@@ -39,8 +42,8 @@ class Moment(threading.Thread):
 
     def run(self):
         # Configure the Directory for the Videos
-        os.system("rm -rf " + self.config_recordinglocation + "*")
-        os.system("mkdir -p " + self.config_recordinglocation)
+        Popen("rm -rf " + self.config_recordinglocation + "*", shell=True)
+        Popen("mkdir -p " + self.config_recordinglocation, shell=True)
 
         # Pull all the Network Information
         gw = os.popen("ip -4 route show default").read().split()
@@ -73,25 +76,19 @@ class Moment(threading.Thread):
             0, 6], text="http://" + str(self.ipaddr) + ":80", size=29)
 
         self.busy.hide()
-        t = threading.Thread(target=self.initialVideo)
+        t = threading.Thread(target=self.startVideo)
         t.start()
 
         self.app.display()
 
-    def initialVideo(self):
+    def startVideo(self):
         self.recording = True
         capture_number = self.timestamp()
         sleep(2)
-        command_execute = Popen(
+        Popen(
             "libcamera-vid -t 0 --qt-preview --hflip --vflip --autofocus --keypress -o /home/pi/Videos/%03d-"+str(capture_number)+".h264 --segment 10000 width 1920 --height 1080 ", stdout=PIPE, stdin=PIPE, stderr=STDOUT, shell=True, close_fds=True)
-        # stdout, stderr = command_execute.communicate()
         sleep(1)
         Popen("xdotool key alt+F11", shell=True)
-
-    def clear(self):
-        self.show_busy()
-        os.system("rm -v /home/pi/Downloads/*")
-        self.hide_busy()
 
     def show_busy(self):
         self.busy.show()
@@ -110,39 +107,37 @@ class Moment(threading.Thread):
     # Generate timestamp string generating name for photos
     def timestamp(self):
         tstring = datetime.datetime.now()
-        #print("Filename generated ...")
+        print("[DEBUG]:Filename generated ...")
         return tstring.strftime("%Y%m%d_%H%M%S")
 
     def recordingControl(self, channel):
         if self.recording == False:
             print("[DEBUG]:Recording started")
-            self.recording = True
-            capture_number = self.timestamp()
-            command_execute = Popen(
-                "libcamera-vid -t 0 --qt-preview --hflip --vflip --autofocus --keypress -o /home/pi/Videos/%03d-"+str(capture_number)+".h264 --segment 10000 width 1920 --height 1080 ", stdout=PIPE, stdin=PIPE, stderr=STDOUT, shell=True, close_fds=True)
-            # stdout, stderr = command_execute.communicate()
-            sleep(1)
-            Popen("xdotool key alt+F11", shell=True)
+            self.startVideo()
         else:
             print("[DEBUG]:Stopping Recording")
-            os.system("pkill libcamera-vid")
+            Popen("pkill libcamera-vid", shell=True)
             self.recording = False
 
     def uploadVideo(self, channel):
         GPIO.remove_event_detect(23)
+        GPIO.remove_event_detect(24)
         if self.recording == True:
             print("[DEBUG]:Recording stops in order to Upload the Video")
-            os.system("pkill libcamera-vid")
+            Popen("pkill libcamera-vid", shell=True)
             self.recording = False
         else:
             print("[DEBUG]:Uploading Video")
+        
         GPIO.add_event_detect(
             23, GPIO.FALLING, callback=self.uploadVideo, bouncetime=1000)
+        GPIO.add_event_detect(
+            24, GPIO.FALLING, callback=self.recordingControl, bouncetime=1000)
 
     def processVideo(self, channel):
         if self.recording == True:
             print("[DEBUG]:Recording stops in order to Process the Video")
-            os.system("pkill libcamera-vid")
+            Popen("pkill libcamera-vid", shell=True)
             self.recording = False
         else:
             print("[DEBUG]:Processing Video")

@@ -114,9 +114,8 @@ class Moment(threading.Thread):
         return tstring.strftime("%Y%m%d_%H%M%S")
 
     def recordingControl(self, channel):
-        print("Recording Control called")
         if self.recording == False:
-            print("Recording started")
+            print("[DEBUG]:Recording started")
             self.recording = True
             capture_number = self.timestamp()
             command_execute = Popen(
@@ -125,28 +124,28 @@ class Moment(threading.Thread):
             sleep(1)
             Popen("xdotool key alt+F11", shell=True)
         else:
-            print("Recording stops")
+            print("[DEBUG]:Stopping Recording")
             os.system("pkill libcamera-vid")
             self.recording = False
 
     def uploadVideo(self, channel):
         GPIO.remove_event_detect(23)
         if self.recording == True:
-            print("Recording stops in order to Upload the Video")
+            print("[DEBUG]:Recording stops in order to Upload the Video")
             os.system("pkill libcamera-vid")
             self.recording = False
         else:
-            print("Uploading Video")
+            print("[DEBUG]:Uploading Video")
         GPIO.add_event_detect(
             23, GPIO.FALLING, callback=self.uploadVideo, bouncetime=2500)
 
     def processVideo(self, channel):
         if self.recording == True:
-            print("Recording stops in order to Process the Video")
+            print("[DEBUG]:Recording stops in order to Process the Video")
             os.system("pkill libcamera-vid")
             self.recording = False
         else:
-            print("Process Video")
+            print("[DEBUG]:Processing Video")
         # TODO: ffmpeg commands to process the video footage
 
     def picture_left(self):

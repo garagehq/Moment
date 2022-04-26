@@ -113,7 +113,12 @@ class Moment(threading.Thread):
     def recordingControl(self, channel):
         if self.recording == False:
             print("[DEBUG]:Recording started")
-            self.startVideo()
+            self.recording = True
+            capture_number = self.timestamp()
+            Popen(
+                "libcamera-vid -t 0 --qt-preview --hflip --vflip --autofocus --keypress -o /home/pi/Videos/%03d-"+str(capture_number)+".h264 --segment 10000 width 1920 --height 1080 ", stdout=PIPE, stdin=PIPE, stderr=STDOUT, shell=True, close_fds=True)
+            sleep(1)
+            Popen("xdotool key alt+F11", shell=True)
         else:
             print("[DEBUG]:Stopping Recording")
             Popen("pkill libcamera-vid", shell=True)

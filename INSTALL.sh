@@ -1,11 +1,14 @@
 #!/bin/bash
 # All Packages are pinned to the 2022-04-04 Kernel Release
 
-sudo apt-get install -y git vim
+sudo apt-get install -y git vim xdotool
 
 # HOLD/PIN THE KERNEL IMAGES
 sudo apt-mark hold libraspberrypi-bin libraspberrypi-dev libraspberrypi-doc libraspberrypi0
 sudo apt-mark hold raspberrypi-bootloader raspberrypi-kernel raspberrypi-kernel-headers
+
+# Upgrade all other packages
+sudo apt update -y && sudo apt upgrade -y
 
 # change hostname
 sudo hostnamectl set-hostname moment
@@ -98,6 +101,9 @@ sudo install -m 644 *.desktop /home/pi/.config/autostart/
 sudo cp Moment.desktop ~/Desktop/
 sudo sed -i -e '$i \start_x=1\ngpu_mem=128\n' /boot/config.txt
 
+# Overclock the Raspberry Pi Zero 2 W
+sudo sed -i -e '$i \#Overclock 1200\narm_freq=1200\n' /boot/config.txt
+
 # Reboot
 echo "[SUCCESS]: Installation Finished, Rebooting Now..."
 sleep 5
@@ -122,4 +128,20 @@ sudo reboot now
 #
 #:: Concatenate Files
 #ffmpeg -f concat -i mylist.txt -c copy output.mp4
+
+
+#rsync
+# rsync -avz --progress --partial /home/pi/Moment_Save/final/ /home/pi/drive/Garage_Videos/
+
+# camera command
+#libcamera-vid -t 0 --framerate 30 --qt-preview --hflip --vflip --autofocus --keypress -o 000.h264 --width 1920 --height 1080
+
+# PROCESS VIDEO COMMAND
+# ffmpeg -framerate 30 -i /home/pi/Videos/20220426_215158.h264 -c copy /home/pi/Downloads/000.mp4
+# ffmpeg -framerate 30 -i 000.h264 -c copy 000.mp4
+# ffmpeg -framerate 30 -i /home/pi/Downloads/20220426_214017.h264 -c copy /home/pi/Downloads/20220426_214017.mp4
+
+# CUTTING COMMAND
+# ffmpeg -v debug -sseof -6 -i /home/pi/Downloads/20220427_142940.mp4 /home/pi/Downloads/1.mp4 
+# ffmpeg -v debug -sseof -5 -i /home/pi/Downloads/20220427_142940.mp4 -c copy /home/pi/Downloads/007-edited.mp4
 

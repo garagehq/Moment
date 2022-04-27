@@ -1,6 +1,9 @@
 # Moment
 Captures Just the significant Moments in Time you want, without the need for laborous editing
 
+Requirement:
+Pinned to the 04-07-2022 Kernel Version of RaspiOS
+https://downloads.raspberrypi.org/raspios_full_armhf/images/raspios_full_armhf-2022-04-07/
 
 1. Connect to Device Access Point
 2. Configure Wi-Fi Connection, Configure Web Storage Locaiton via RClone, and Auto Upload Behavior

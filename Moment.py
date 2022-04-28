@@ -315,9 +315,13 @@ class Moment(threading.Thread):
                     self.killRecording()
                     self.recording = False
 
+                Text(self.processWindow, color="white", grid=[
+                    0, 3], text="[--PROCESSING--]", size=29)
+                self.processWindow.update()
+
+                sleep(2)
                 if self.config_audio == True and self.config_video == False:
                     print("[DEBUG]:Processing Audio Only")
-
                     print("[DEBUG]:Cutting the .wav using ffmpeg while transcoding to .mp3")
                     cutting_audio = "ffmpeg -v debug -sseof -" + str(self.time_counter * self.config_timesegment) + " -i " + str(self.config_recordinglocation) + str(
                         self.filename) + ".wav -vn -ar 44100 -ac 2 -b:a 192k" + str(self.config_momentSaveLocation) + str(self.filename) + ".mp3"
@@ -325,12 +329,12 @@ class Moment(threading.Thread):
                           cutting_audio)
                     splitAudio = Popen(
                         ['ffmpeg', '-v', 'debug', '-sseof', '-'+str(self.time_counter * self.config_timesegment), '-i', str(self.config_recordinglocation) + str(
-                            self.filename) + '.wav', "-vn", "-ar", "44100", "-ac", "2", "-b:a", "192k", str(self.config_momentSaveLocation) + str(self.filename) + '.mp3'])
+                            self.filename) + '.wav', '-vn', '-ar', '44100', '-ac', '2', '-b:a', '192k', str(self.config_momentSaveLocation) + str(self.filename) + '.mp3'])
                     splitAudio.wait()
                     print("[DEBUG]:Audio Moment Processed and move to " +
                           str(self.config_momentSaveLocation) + '.mp3')
                     Text(self.processWindow, color="white", grid=[
-                        0, 4], text="-Finished Raw Audio Processing", size=22)
+                        0, 4], text="-Finished Audio Processing", size=22)
                     self.processWindow.update()
                     sleep(1)
                     Text(self.processWindow, color="white", grid=[
@@ -341,12 +345,6 @@ class Moment(threading.Thread):
 
                 elif self.config_video == True:
                     print("[DEBUG]:Processing Video ")
-                    Text(self.processWindow, color="white", grid=[
-                        0, 3], text="[--PROCESSING--]", size=29)
-                    self.processWindow.update()
-
-                    sleep(2)
-
                     print("[DEBUG]:Process .h264 raw video using  into an .mp4")
                     raw_conversation_command = "ffmpeg -v debug -framerate " + str(self.config_framerate) + " -i " + str(self.config_recordinglocation) + str(
                         self.filename) + ".h264 -c copy " + str(self.config_fullRawSaveLocation) + str(self.filename) + ".mp4"
@@ -356,7 +354,6 @@ class Moment(threading.Thread):
                             self.filename) + '.h264', '-c', 'copy', str(self.config_fullRawSaveLocation) + str(self.filename) + '.mp4'])
                     createMp4.wait()
 
-                    
                     Text(self.processWindow, color="white", grid=[
                         0, 4], text="-Finished Raw Video Processing", size=22)
                     self.processWindow.update()
@@ -425,11 +422,11 @@ class Moment(threading.Thread):
             self.time_counter = 1
 
         self.processWindow = Window(self.app, bg="black", height=480,
-                              width=480, layout="grid", title="Process Recording")
+                              width=480, layout="grid", title="Process Moment")
         self.processWindow.tk.attributes("-fullscreen", True)
 
         Text(self.processWindow, color="white", grid=[
-            0, 0], text="Process Recording", size=38)
+            0, 0], text="Process Moment", size=38)
         Text(self.processWindow, color="white", grid=[
             0, 1], text=str(self.time_counter) + " mins", size=29)
         Text(self.processWindow, color="white", grid=[

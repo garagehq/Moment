@@ -17,13 +17,15 @@ class Moment(threading.Thread):
         Popen(['xdotool', 'mousemove', '480', '480']).wait()
         # Close any lingering instance of libcamera-vid
         Popen(['pkill', 'libcamera-vid']).wait()
+        # Close any lingering instance of arecord
+        Popen(['pkill', 'arecord']).wait()
 
         self.recording = False
         self.startTime = 0
         
         # Load the Config File
-        self.config_audio = False
-        self.config_video = True
+        self.config_audio = True
+        self.config_video = False
         self.config_framerate = "30"
         self.config_timesegment = 60
         self.config_recordinglocation = "/home/pi/Videos/"
@@ -56,9 +58,10 @@ class Moment(threading.Thread):
         print("[DEBUG]:Finish Adding Event Detects")
 
     def run(self):
-        # Configure the Directory for the Videos
-        Popen(["rm", "-rf", self.config_recordinglocation + "*"]).wait()
+        # Configure the Directory for the moments and clear out past unsaved moments
+        Popen("rm -rf " + self.config_recordinglocation + "*", shell=True).wait()
         Popen(["mkdir",'-p', self.config_recordinglocation]).wait()
+        Popen("rm -rf " + self.config_fullRawSaveLocation + "*", shell=True).wait()
         Popen(["mkdir", '-p', self.config_fullRawSaveLocation]).wait()
         Popen(["mkdir", '-p', self.config_momentSaveLocation]).wait()
 
@@ -78,25 +81,31 @@ class Moment(threading.Thread):
             self.host = socket.gethostname()
 
         Text(self.app, color="white", grid=[
-            0, 0], text=" Network Information", size=38)
+            0, 0], text="   Network Information", size=34)
 
         Text(self.app, color="white", grid=[
-            0, 1], text="HOST:" + str(self.host), size=29)
+            0, 1], text="HOST:" + str(self.host), size=26)
 
         Text(self.app, color="white", grid=[
-            0, 2], text="IP:" + str(self.ipaddr), size=29)
+            0, 2], text="IP:" + str(self.ipaddr), size=26)
 
         Text(self.app, color="white", grid=[
-            0, 3], text="GW:" + str(self.gateway), size=29)
+            0, 3], text="GW:" + str(self.gateway), size=26)
 
         Text(self.app, color="white", grid=[
-            0, 4], text="SSID:" + str(self.ssid), size=29)
+            0, 4], text="SSID:" + str(self.ssid.strip("\n")), size=26)
 
         Text(self.app, color="white", grid=[
-            0, 5], text="CONFIG:", size=29)
+            0, 5], text="CONFIG:", size=26)
 
         Text(self.app, color="white", grid=[
-            0, 6], text="http://" + str(self.ipaddr) + ":80", size=29)
+            0, 6], text="http://" + str(self.ipaddr) + ":80", size=26)
+
+        Text(self.app, color="white", grid=[
+            0, 7], text="\n  Press (-) to Upload\n   Press (+) to Save Rec.", size=26)
+
+        Text(self.app, color="white", grid=[
+            0, 8], text="        (-)             (+)", size=35)
 
         t = threading.Thread(target=self.startRecording)
         t.start()
@@ -111,13 +120,33 @@ class Moment(threading.Thread):
             self.filename = self.timestamp()
             # get current time
             self.startTime = datetime.datetime.now()
-            start_recording_command = "libcamera-vid -t 0 --qt-preview --hflip --vflip --autofocus -o " + self.config_recordinglocation + str(self.filename) + ".h264 --width 1920 --height 1080 "
-            print("[DEBUG]:Start Recording Command: " + start_recording_command)
-            Popen(
-                start_recording_command,
-                shell=True)
-            sleep(5)
-            Popen(['xdotool', 'key', 'alt+F11'])
+            if self.config_audio == True:
+                # Check for Audio USB Devices before starting arecord
+                print(
+                    "[DEBUG]: Checking Audio Devices")
+                audioDevices = Popen('arecord  -l | grep "card 1"',stdout=PIPE, stderr=STDOUT, shell=True)
+                stdout, stderr = audioDevices.communicate()
+                audioDevices.wait()
+                audioDevicesString = stdout.rstrip().decode()
+                print("[DEBUG:] Audio Device Status =", audioDevicesString)
+                if not audioDevicesString:
+                    print("[DEBUG]: No Audio Recording Device Present, turning audio recording off")
+                    self.config_audio = False
+                else:
+                    print("[DEBUG]:Start Audio Recording")
+                    Popen("amixer set Capture 100%", shell=True).wait()
+                    start_audio_command = "arecord "+ self.config_recordinglocation + str(self.filename) + ".wav"
+                    Popen(start_audio_command, shell=True)
+            if self.config_video == True:
+                start_video_command = "libcamera-vid -t 0 --qt-preview --hflip --vflip --autofocus -o " + self.config_recordinglocation + str(self.filename) + ".h264 --width 1920 --height 1080 "
+                print("[DEBUG]:Start Recording Command: " + start_video_command)
+                Popen(
+                    start_video_command,
+                    shell=True)
+                sleep(5)
+                Popen(['xdotool', 'key', 'alt+F11'])
+            if self.config_video == False and self.config_audio == False:
+                print("[DEBUG]: No Moment Recording In Progress, Please Check Hardware")
         else:
             print("[DEBUG]:Recording already in progress")
 
@@ -142,19 +171,18 @@ class Moment(threading.Thread):
 
             elif GPIO.input(24) == GPIO.LOW:
                 if self.recording == True:
-                    print("[DEBUG]:Recording stops in order to Upload the Video")
-                    Popen(['pkill','libcamera-vid']).wait()
+                    print("[DEBUG]:Recording stops in order to Upload the Moment")
+                    self.killRecording()
                     self.recording = False
                 else:
-                    print("[DEBUG]:Uploading Video")
+                    print("[DEBUG]:Uploading Moment")
 
                 sleep(1)
                 Text(self.uploadWindow, color="white", grid=[
                     0, 4], text="Upload Started", size=24)
                 self.uploadWindow.update()
-                upload_recording_command = "cp -rf" + self.config_momentSaveLocation + \
-                    "* " + self.config_drivelocation
-                print("[DEBUG]:Upload Video Command: " +
+                upload_recording_command = "rsync -avz --progress --partial" + str(self.config_momentSaveLocation) + str(self.config_drivelocation)
+                print("[DEBUG]:Upload Moment Command: " +
                       upload_recording_command)
                 upload_recording = Popen(['rsync', '-avz', '--progress', '--partial',
                                          self.config_momentSaveLocation, self.config_drivelocation])
@@ -170,10 +198,11 @@ class Moment(threading.Thread):
                 self.uploadWindow.update()
                 sleep(2)
 
-                # remove_video_command = "rm -rf " + self.config_momentSaveLocation + "*"
-                # print("[DEBUG]:Remove Video Command: " + remove_video_command)
-                # remove_video = Popen(remove_video_command, shell=True)
-                # remove_video.wait()
+                # Remove all moment recordings
+                remove_recordings_command = "rm -rf " + self.config_momentSaveLocation + "*"
+                print("[DEBUG]:Remove Moment Command: " + remove_recordings_command)
+                remove_moment = Popen(remove_recordings_command, shell=True)
+                remove_moment.wait()
 
                 print("[DEBUG]:Hiding Upload Window")
                 self.uploadWindow.hide()
@@ -191,14 +220,14 @@ class Moment(threading.Thread):
         print("[DEBUG]:Upload Moment")
 
         self.uploadWindow = Window(self.app, bg="black", height=480,
-                                    width=480, layout="grid", title="Upload Video(s)")
+                                   width=480, layout="grid", title="Upload Moment(s)")
         self.uploadWindow.tk.attributes("-fullscreen", True)
         Text(self.uploadWindow, color="white", grid=[
-            0, 0], text="  Uploading Video", size=40)
+            0, 0], text="  Uploading Moment", size=40)
         Text(self.uploadWindow, color="white", grid=[
-            0, 1], text="  [Press - to return]", size=28)
+            0, 1], text="  [Press (-) to Return]", size=28)
         Text(self.uploadWindow, color="white", grid=[
-            0, 2], text="  [Press + to Upload]", size=28)
+            0, 2], text="  [Press (+) to Upload]", size=28)
 
         self.uploadWindow.show()
         
@@ -211,10 +240,21 @@ class Moment(threading.Thread):
         t = threading.Thread(target=self.gpio_setup)
         t.start()
 
+    def killRecording(self):
+        print("[DEBUG]:Killing Recording...")
+        if self.config_video == True:
+            print("[DEBUG]:Killing Video...")
+            Popen(['pkill', 'libcamera-vid']).wait()
+        if self.config_audio == True:
+            print("[DEBUG]:Killing Audio...")
+            Popen(['pkill', 'arecord']).wait()
+        return
+
     # Button Logic If GPIO 23 is pressed, then increase the time counter and if GPIO 24 is pressed, then decrease the time counter but if they both are pressed, then process the Recording
     def buttonLogic(self):
         processFlag = False
         changed = False
+        returnHold = 0
         while True:
             if GPIO.input(23) == GPIO.LOW and GPIO.input(24) == GPIO.LOW:
                 # Process
@@ -222,6 +262,7 @@ class Moment(threading.Thread):
                 sleep(0.2)
                 print("[DEBUG]:Begin Processing Recording using ffmpeg")
             elif GPIO.input(24) == GPIO.LOW:
+                returnHold = 0
                 # get end time
                 endTime = datetime.datetime.now()
                 # Calculate the difference between the start and end time in minutes
@@ -236,11 +277,20 @@ class Moment(threading.Thread):
                     sleep(0.2)
                     print("[DEBUG]: Time Counter = " + str(self.time_counter))
             elif GPIO.input(23) == 0:
-                if self.time_counter != GPIO.LOW:
+                if self.time_counter != 0:
                     self.time_counter -= 1
                     changed = True
+                    returnHold = 0
                     sleep(0.2)
                     print("[DEBUG]: Time Counter = " + str(self.time_counter))
+                else:
+                    returnHold += 1
+                    print("[DEBUG]:Return Hold Counter = ", returnHold)
+                    sleep(0.5)
+                    if returnHold > 4:
+                        print("[DEBUG]:Returning Back to the Main Menu due to Press and Hold")
+                        processFlag = True
+                        returnHold = 0
             if changed == True:
                 Text(self.processWindow, color="white", grid=[
                         0, 1], text=str(self.time_counter) + " mins", size=29)
@@ -260,18 +310,37 @@ class Moment(threading.Thread):
                     self.processWindow.hide()
                     return
                 
+                if self.recording == True:
+                    print("[DEBUG]:Recording stops in order to Process the Recordings")
+                    self.killRecording()
+                    self.recording = False
+
                 if self.config_audio == True and self.config_video == False:
                     print("[DEBUG]:Processing Audio Only")
-                    # TODO: Add Audio Only Logic
+
+                    print("[DEBUG]:Cutting the .wav using ffmpeg while transcoding to .mp3")
+                    cutting_audio = "ffmpeg -v debug -sseof -" + str(self.time_counter * self.config_timesegment) + " -i " + str(self.config_recordinglocation) + str(
+                        self.filename) + ".wav -vn -ar 44100 -ac 2 -b:a 192k" + str(self.config_momentSaveLocation) + str(self.filename) + ".mp3"
+                    print("[DEBUG] Cutting .wav while transcoding to .mp3 Command: " +
+                          cutting_audio)
+                    splitAudio = Popen(
+                        ['ffmpeg', '-v', 'debug', '-sseof', '-'+str(self.time_counter * self.config_timesegment), '-i', str(self.config_recordinglocation) + str(
+                            self.filename) + '.wav', "-vn", "-ar", "44100", "-ac", "2", "-b:a", "192k", str(self.config_momentSaveLocation) + str(self.filename) + '.mp3'])
+                    splitAudio.wait()
+                    print("[DEBUG]:Audio Moment Processed and move to " +
+                          str(self.config_momentSaveLocation) + '.mp3')
+                    Text(self.processWindow, color="white", grid=[
+                        0, 4], text="-Finished Raw Audio Processing", size=22)
+                    self.processWindow.update()
+                    sleep(1)
+                    Text(self.processWindow, color="white", grid=[
+                        0, 6], text="Returning to Main Window", size=22)
+                    Text(self.processWindow, color="white", grid=[
+                        0, 7], text="and Restarting Recording", size=22)
+                    self.processWindow.update()
 
                 elif self.config_video == True:
-                    if self.recording == True:
-                        print("[DEBUG]:Recording stops in order to Process the Video")
-                        Popen(['pkill', 'libcamera-vid']).wait()
-                        self.recording = False
-                    else:
-                        print("[DEBUG]:Processing Video")
-
+                    print("[DEBUG]:Processing Video ")
                     Text(self.processWindow, color="white", grid=[
                         0, 3], text="[--PROCESSING--]", size=29)
                     self.processWindow.update()
@@ -321,14 +390,15 @@ class Moment(threading.Thread):
                         0, 7], text="and Restarting Recording", size=22)
                     self.processWindow.update()
 
-                    sleep(2)
-                    print("[DEBUG]:Hiding Process Window")
-                    self.processWindow.hide()
-                    # At the end, Restart Recording
-                    print("[DEBUG]: Restarting Recording")
-                    t = threading.Thread(target=self.startRecording)
-                    t.start()
-                    sleep(2)
+                sleep(2)
+                print("[DEBUG]:Hiding Process Window")
+                self.processWindow.hide()
+                # At the end, Restart Recording
+                print("[DEBUG]:Restarting Recording")
+                t = threading.Thread(target=self.startRecording)
+                t.start()
+                sleep(2)
+
                 return
 
     def processMoment(self, channel):
@@ -341,17 +411,17 @@ class Moment(threading.Thread):
         diff = endTime - self.startTime
         diff_segment = diff.seconds / self.config_timesegment
 
-        print("[DEBUG]:Full Video Duration: " +
+        print("[DEBUG]:Full Moment Duration: " +
               str(diff_segment) + " minutes")
-        # If the difference is greater than the threshold, then process the video differently
+        # If the difference is greater than the threshold, then process the Moment differently
         if diff_segment > 20:
             self.time_counter = 5
-            print("[DEBUG]:Very Long Video, Defaulting Minute Counter to 5")
+            print("[DEBUG]:Very Long Moment, Defaulting Minute Counter to 5")
         elif diff_segment > 5:
             self.time_counter = 3
-            print("[DEBUG]:Long Video, Defaulting Minute Counter to 3")
+            print("[DEBUG]:Long Moment, Defaulting Minute Counter to 3")
         else:
-            print("[DEBUG]:Short Video, Defaulting Minute Counter to 1")
+            print("[DEBUG]:Short Moment, Defaulting Minute Counter to 1")
             self.time_counter = 1
 
         self.processWindow = Window(self.app, bg="black", height=480,

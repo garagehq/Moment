@@ -2,4 +2,3 @@
 Type=Application
 Name=Moment
 Exec=/usr/bin/python3 /home/pi/Moment/Moment.py
-

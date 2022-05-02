@@ -30,11 +30,9 @@ class Moment(threading.Thread):
         self.config = {
             "audio" : False,
             "video": True,
+            "raw_audio": False,
             "framerate": "30",
-            "resolution": {
-                "width": "1920",
-                "height": "1080"
-            },
+            "resolution": "1080p",
             "timeSegment": "60",
             "recordingLocation": "/home/pi/Videos/",
             "fullRawSaveLocation": "/home/pi/Moment_Save/raw/",
@@ -42,12 +40,30 @@ class Moment(threading.Thread):
             "driveLocation": "/home/pi/drive/Garage_Videos/",
             "logLocation": "/home/pi/Moment_Save/logs/",
             "logCommand": " 2>&1 " + self.config["logLocation"],
-            "log": True
+            "log": True,
+            "orientation": "vertical"
+        }
+        
+        self.resolution = {
+            "1080p": {
+                "width": "1920",
+                "height": "1080"
+            },
+            "2.7k": {
+                "width": "2704",
+                "height": "1520"
+            },
+            "4k": {
+                "width": "3840",
+                "height": "2160"
+            }
         }
 
         # Check to see if there is a config file, if not, use the defaults
         # TODO: Add a check to see if the config file is valid
-        
+        if path.exists("/home/pi/.config/Moment_Config.txt"):
+            # load configuation variables
+            print("[DEBUG]: Loading Config File")
 
         self.app = App(layout="grid", title="Camera Controls",
                        bg="black", width=480, height=480)
@@ -153,8 +169,8 @@ class Moment(threading.Thread):
             if self.config["video"] == True:
                 start_video_command = "libcamera-vid -t 0 --qt-preview --hflip --vflip --autofocus -o " + self.config["recordingLocation"] + \
                     str(self.filename) + ".h264 --width " + \
-                    self.config["resolution"]["width"] + \
-                    " --height "+self.config["resolution"]["height"]
+                    self.resolution[self.config["resolution"]]["width"] + \
+                    " --height "+ self.resolution[self.config["resolution"]]["height"]
                 print("[DEBUG]:Start Recording Command: " + start_video_command)
                 Popen(
                     start_video_command,
@@ -350,13 +366,12 @@ class Moment(threading.Thread):
                         print("[DEBUG]:Returning Back to the Main Menu due to Press and Hold")
                         processFlag = True
                         returnHold = 0
+                        
             if changed == True:
                 Text(self.processWindow, color="white", grid=[
                         0, 1], text=str(self.time_counter) + " mins", size=29)
                 self.processWindow.update()
                 changed = False
-        
-            sleep(0.2)
 
             if processFlag == True:
                 if self.time_counter == 0:
@@ -393,6 +408,16 @@ class Moment(threading.Thread):
                     splitAudio.wait()
                     print("[DEBUG]:Audio Moment Processed and move to " +
                           str(self.config["momentSaveLocation"]) + '.mp3')
+                    if self.config["raw_audio"] == False:
+                        # ffmpeg -i <input_file> -af "highpass=f=200, lowpass=f=3000" <output_file>
+                        self.filename += ".adj"
+                        process_audio = "ffmpeg -i " + str(self.config["momentSaveLocation"]) + str(
+                            self.filename) + ".mp3" + ' -af "highpass=f=200, lowpass=f=3000" ' + str(self.config["momentSaveLocation"]) + str(self.filename) + ".mp3"
+                        print("[DEBUG] Adjusting Audio Quality: " +
+                              process_audio)
+                        processAudio = Popen(
+                            ['ffmpeg', '-i', str(self.config["momentSaveLocation"]) + str(self.filename) + ".mp3", '-af', 'highpass=f=200, lowpass=f=3000', str(self.config["momentSaveLocation"]) + str(self.filename) + ".mp3"])
+                        processAudio.wait()
                     Text(self.processWindow, color="green", grid=[
                         0, 4], text="-Finished Audio Processing", size=22)
                     self.processWindow.update()
@@ -422,6 +447,19 @@ class Moment(threading.Thread):
                     # TODO: Merge Audio and Video
                     if self.config["audio"] == True:
                         print("[DEBUG]:Merging Audio and Video")
+                        
+                        if self.config["raw_audio"] == False:
+                            # ffmpeg -i <input_file> -af "highpass=f=200, lowpass=f=3000" <output_file>
+                            process_audio = "ffmpeg -i " + str(self.config["recordingLocation"]) + str(
+                                self.filename) + ".mp3" + ' -af "highpass=f=200, lowpass=f=3000" ' + str(self.config["momentSaveLocation"]) + str(self.filename) + ".mp3"
+                            print("[DEBUG] Adjusting Audio Quality: " +
+                                process_audio)
+                            processAudio = Popen(
+                                ['ffmpeg', '-i', str(self.config["momentSaveLocation"]) + str(self.filename) + ".mp3", '-af', 'highpass=f=200, lowpass=f=3000', str(self.config["momentSaveLocation"]) + str(self.filename) + ".mp3"])
+                            processAudio.wait()
+                        else:
+                            print("[DEBUG]:Using Raw Audio Quality")
+                        
 
                     print("[DEBUG]:Cutting the Proccessed .mp4 Video using ffmpeg")
                     cutting_processed_video = "ffmpeg -v debug -sseof -" + str(self.time_counter * self.config["timeSegment"]) + " -i " + str(self.config["fullRawSaveLocation"]) + str(

@@ -2,6 +2,7 @@
 
 from guizero import App, Text, Window
 from time import sleep
+from urllib import urlopen
 import datetime
 from os import popen
 import socket
@@ -24,8 +25,8 @@ class Moment(threading.Thread):
         self.startTime = 0
         
         # Load the Config File
-        self.config_audio = True
-        self.config_video = False
+        self.config_audio = False
+        self.config_video = True
         self.config_framerate = "30"
         self.config_timesegment = 60
         self.config_recordinglocation = "/home/pi/Videos/"
@@ -170,6 +171,29 @@ class Moment(threading.Thread):
                 return
 
             elif GPIO.input(24) == GPIO.LOW:
+                # Check to see if device is connected to the internet
+                print("[DEBUG]:Checking for Internet Connection")
+                try:
+                    response = urlopen('http://www.google.com')
+                    print("[DEBUG]:Internet Connection Found")
+                except URLError as err:
+                    print("[DEBUG]:No Internet Connection Found")
+                    Text(self.uploadWindow, color="white", grid=[
+                        0, 5], text="ERROR:No Internet Connection", size=22)
+                    self.uploadWindow.update()
+                    sleep(1)
+                    Text(self.uploadWindow, color="white", grid=[
+                        0, 6], text="Connect via config server and try again", size=20)
+                    self.uploadWindow.update()
+                    sleep(1)
+                    Text(self.uploadWindow, color="white", grid=[
+                        0, 6], text="Returning to Main Window", size=22)
+                    self.uploadWindow.update()
+                    sleep(2)
+                    print("[DEBUG]:Hiding Upload Window")
+                    self.uploadWindow.hide()
+                    return
+
                 if self.recording == True:
                     print("[DEBUG]:Recording stops in order to Upload the Moment")
                     self.killRecording()

@@ -2,7 +2,7 @@
 
 from guizero import App, Text, Window
 from time import sleep
-from urllib import urlopen
+import urllib.request
 import datetime
 from os import popen, path
 import socket
@@ -33,13 +33,12 @@ class Moment(threading.Thread):
             "raw_audio": False,
             "framerate": "30",
             "resolution": "1080p",
-            "timeSegment": "60",
+            "timeSegment": 60,
             "recordingLocation": "/home/pi/Videos/",
             "fullRawSaveLocation": "/home/pi/Moment_Save/raw/",
             "momentSaveLocation": "/home/pi/Moment_Save/final/",
             "driveLocation": "/home/pi/drive/Garage_Videos/",
             "logLocation": "/home/pi/Moment_Save/logs/",
-            "logCommand": " 2>&1 " + self.config["logLocation"],
             "log": True,
             "orientation": "vertical"
         }
@@ -80,10 +79,13 @@ class Moment(threading.Thread):
         GPIO.setmode(GPIO.BCM)     # set up BCM GPIO numbering
         GPIO.setup(23, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(24, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.setup(3, GPIO.IN)
         GPIO.add_event_detect(
             23, GPIO.FALLING, callback=self.upload_moment, bouncetime=2000)
         GPIO.add_event_detect(
             24, GPIO.FALLING, callback=self.process_moment, bouncetime=1000)
+        GPIO.add_event_detect(
+            3, GPIO.FALLING, callback=self.config_menu, bouncetime=1000)
         print("[DEBUG]:Finish Adding Event Detects")
 
     def run(self):
@@ -180,7 +182,7 @@ class Moment(threading.Thread):
                     print("[DEBUG]: No Video Recording Hardware Present, turning video recording off")
                     self.config["video"] = False
                 else:
-                    start_video_command = "libcamera-vid -t 0 --framerate" + self.config["framerate"] + " --qt-preview --hflip --vflip --autofocus -o " + self.config["recordingLocation"] + \
+                    start_video_command = "libcamera-vid -t 0 --framerate " + self.config["framerate"] + " --qt-preview --hflip --vflip --autofocus -o " + self.config["recordingLocation"] + \
                         str(self.filename) + ".h264 --width " + \
                         self.resolution[self.config["resolution"]]["width"] + \
                         " --height "+ self.resolution[self.config["resolution"]]["height"]
@@ -220,24 +222,35 @@ class Moment(threading.Thread):
                 # Check to see if device is connected to the internet
                 print("[DEBUG]:Checking for Internet Connection")
                 try:
-                    response = urlopen('http://www.google.com')
+                    response = urllib.request.urlopen('http://www.google.com')
                     print("[DEBUG]:Internet Connection Found")
-                except URLError as err:
+                except:
                     print("[DEBUG]:No Internet Connection Found")
                     Text(self.uploadWindow, color="red", grid=[
                         0, 5], text="ERROR:No Internet Connection", size=22)
                     self.uploadWindow.update()
                     sleep(1)
                     Text(self.uploadWindow, color="white", grid=[
-                        0, 6], text="Connect via config server and try again", size=20)
+                        0, 6], text="Connect via config server & try again", size=20)
                     self.uploadWindow.update()
-                    sleep(1)
+                    sleep(2)
                     Text(self.uploadWindow, color="white", grid=[
-                        0, 6], text="Returning to Main Window", size=22)
+                        0, 7], text="Returning to Main Window", size=22)
                     self.uploadWindow.update()
                     sleep(2)
                     print("[DEBUG]:Hiding Upload Window")
                     self.uploadWindow.hide()
+
+                    if self.recording == True:
+                        print("[DEBUG]:Recording stops in order to show Main Menu")
+                        self.kill_recording()
+                        self.recording = False
+                        sleep(4)
+                        print("[DEBUG]: Restarting Recording")
+                        t = threading.Thread(target=self.start_recording)
+                        t.start()
+                        sleep(2)
+        
                     return
 
                 if self.recording == True:
@@ -381,7 +394,9 @@ class Moment(threading.Thread):
                         print("[DEBUG]:Returning Back to the Main Menu due to Press and Hold")
                         processFlag = True
                         returnHold = 0
-                        
+            
+            sleep(0.3)
+            
             if changed == True:
                 Text(self.processWindow, color="white", grid=[
                         0, 1], text=str(self.time_counter) + " mins", size=29)
@@ -392,7 +407,7 @@ class Moment(threading.Thread):
                 if self.time_counter == 0:
                     print("[DEBUG]:Returning to Main Menu")
                     Text(self.processWindow, color="white", grid=[
-                        0, 2], text="Returning to Main Menu", size=29)
+                        0, 3], text="Returning to Main Menu", size=29)
                     self.processWindow.update()
                     sleep(2)
                     print("[DEBUG]:Hiding Process Window")
@@ -555,6 +570,10 @@ class Moment(threading.Thread):
         GPIO.cleanup()
         t = threading.Thread(target=self.gpio_setup)
         t.start()
+        
+    def config_menu(self):
+        print("[DEBUG]:Opening Config Menu")
+        sleep(1)
 
 
 if __name__ == '__main__':

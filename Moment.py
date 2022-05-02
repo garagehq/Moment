@@ -65,9 +65,9 @@ class Moment(threading.Thread):
         GPIO.setup(23, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(24, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.add_event_detect(
-            23, GPIO.FALLING, callback=self.uploadMoment, bouncetime=2000)
+            23, GPIO.FALLING, callback=self.upload_moment, bouncetime=2000)
         GPIO.add_event_detect(
-            24, GPIO.FALLING, callback=self.processMoment, bouncetime=1000)
+            24, GPIO.FALLING, callback=self.process_moment, bouncetime=1000)
         print("[DEBUG]:Finish Adding Event Detects")
 
     def run(self):
@@ -120,12 +120,12 @@ class Moment(threading.Thread):
         Text(self.app, color="white", grid=[
             0, 8], text="        (-)             (+)", size=35)
 
-        t = threading.Thread(target=self.startRecording)
+        t = threading.Thread(target=self.start_recording)
         t.start()
 
         self.app.display()
 
-    def startRecording(self):
+    def start_recording(self):
         if self.recording == False:
             self.recording = True
             print("[DEBUG]:Recording started")
@@ -193,7 +193,7 @@ class Moment(threading.Thread):
                     print("[DEBUG]:Internet Connection Found")
                 except URLError as err:
                     print("[DEBUG]:No Internet Connection Found")
-                    Text(self.uploadWindow, color="white", grid=[
+                    Text(self.uploadWindow, color="red", grid=[
                         0, 5], text="ERROR:No Internet Connection", size=22)
                     self.uploadWindow.update()
                     sleep(1)
@@ -211,7 +211,7 @@ class Moment(threading.Thread):
 
                 if self.recording == True:
                     print("[DEBUG]:Recording stops in order to Upload the Moment")
-                    self.killRecording()
+                    self.kill_recording()
                     self.recording = False
                 else:
                     print("[DEBUG]:Uploading Moment")
@@ -232,7 +232,7 @@ class Moment(threading.Thread):
                     sleep(2)
                 else:
                     print("[DEBUG]:No Drive Mounted, Please Mount Drive")
-                    Text(self.uploadWindow, color="white", grid=[
+                    Text(self.uploadWindow, color="red", grid=[
                         0, 5], text="ERROR:No Drive Mounted", size=22)
                     self.uploadWindow.update()
                     sleep(1)
@@ -248,7 +248,7 @@ class Moment(threading.Thread):
                     self.uploadWindow.hide()
                     return
 
-                Text(self.uploadWindow, color="white", grid=[
+                Text(self.uploadWindow, color="green", grid=[
                     0, 5], text="Upload Finished!", size=24)
                 self.uploadWindow.update()
                 sleep(1)
@@ -267,13 +267,13 @@ class Moment(threading.Thread):
                 self.uploadWindow.hide()
                 # At the end, Restart Recording
                 print("[DEBUG]: Restarting Recording")
-                t = threading.Thread(target=self.startRecording)
+                t = threading.Thread(target=self.start_recording)
                 t.start()
                 sleep(2)
 
                 return
 
-    def uploadMoment(self, channel):
+    def upload_moment(self, channel):
         GPIO.remove_event_detect(23)
         GPIO.remove_event_detect(24)
         print("[DEBUG]:Upload Moment")
@@ -299,7 +299,7 @@ class Moment(threading.Thread):
         t = threading.Thread(target=self.gpio_setup)
         t.start()
 
-    def killRecording(self):
+    def kill_recording(self):
         print("[DEBUG]:Killing Recording...")
         if self.config["video"] == True:
             print("[DEBUG]:Killing Video...")
@@ -310,7 +310,7 @@ class Moment(threading.Thread):
         return
 
     # Button Logic If GPIO 23 is pressed, then increase the time counter and if GPIO 24 is pressed, then decrease the time counter but if they both are pressed, then process the Recording
-    def buttonLogic(self):
+    def process_moment_button_logic(self):
         processFlag = False
         changed = False
         returnHold = 0
@@ -371,7 +371,7 @@ class Moment(threading.Thread):
                 
                 if self.recording == True:
                     print("[DEBUG]:Recording stops in order to Process the Recordings")
-                    self.killRecording()
+                    self.kill_recording()
                     self.recording = False
 
                 Text(self.processWindow, color="white", grid=[
@@ -379,6 +379,7 @@ class Moment(threading.Thread):
                 self.processWindow.update()
 
                 sleep(2)
+                
                 if self.config["audio"] == True and self.config["video"] == False:
                     print("[DEBUG]:Processing Audio Only")
                     print("[DEBUG]:Cutting the .wav using ffmpeg while transcoding to .mp3")
@@ -392,7 +393,7 @@ class Moment(threading.Thread):
                     splitAudio.wait()
                     print("[DEBUG]:Audio Moment Processed and move to " +
                           str(self.config["momentSaveLocation"]) + '.mp3')
-                    Text(self.processWindow, color="white", grid=[
+                    Text(self.processWindow, color="green", grid=[
                         0, 4], text="-Finished Audio Processing", size=22)
                     self.processWindow.update()
                     sleep(1)
@@ -413,7 +414,7 @@ class Moment(threading.Thread):
                             self.filename) + '.h264', '-c', 'copy', str(self.config["fullRawSaveLocation"]) + str(self.filename) + '.mp4'])
                     createMp4.wait()
 
-                    Text(self.processWindow, color="white", grid=[
+                    Text(self.processWindow, color="green", grid=[
                         0, 4], text="-Finished Raw Video Processing", size=22)
                     self.processWindow.update()
                     sleep(1)
@@ -432,7 +433,7 @@ class Moment(threading.Thread):
                             self.filename) + '.mp4', "-c", "copy", str(self.config["momentSaveLocation"]) + str(self.filename) + '.mp4'])
                     splitMp4.wait()
 
-                    Text(self.processWindow, color="white", grid=[
+                    Text(self.processWindow, color="green", grid=[
                         0, 5], text="-Finished Video Splitting", size=22)
                     self.processWindow.update()
                     sleep(1)
@@ -451,13 +452,13 @@ class Moment(threading.Thread):
                 self.processWindow.hide()
                 # At the end, Restart Recording
                 print("[DEBUG]:Restarting Recording")
-                t = threading.Thread(target=self.startRecording)
+                t = threading.Thread(target=self.start_recording)
                 t.start()
                 sleep(2)
 
                 return
 
-    def processMoment(self, channel):
+    def process_moment(self, channel):
         GPIO.remove_event_detect(23)
         GPIO.remove_event_detect(24)
 
@@ -495,7 +496,7 @@ class Moment(threading.Thread):
         
         sleep(1)
 
-        self.buttonLogic()
+        self.process_moment_button_logic()
 
         print("[DEBUG]:Reset GPIO Interrupts")
         GPIO.cleanup()

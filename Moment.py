@@ -152,13 +152,13 @@ class Moment(threading.Thread):
             if self.config["audio"] == True:
                 # Check for Audio USB Devices before starting arecord
                 print(
-                    "[DEBUG]: Checking Audio Devices")
-                audioDevices = Popen('arecord  -l | grep "card 1"',stdout=PIPE, stderr=STDOUT, shell=True)
-                stdout, stderr = audioDevices.communicate()
-                audioDevices.wait()
-                audioDevicesString = stdout.rstrip().decode()
-                print("[DEBUG:] Audio Device Status =", audioDevicesString)
-                if not audioDevicesString:
+                    "[DEBUG]: Checking Audio Hardware")
+                audioHardware = Popen('arecord  -l | grep "card 1"',stdout=PIPE, stderr=STDOUT, shell=True)
+                stdout, stderr = audioHardware.communicate()
+                audioHardware.wait()
+                audioHardwareString = stdout.rstrip().decode()
+                print("[DEBUG:] Audio Device Status =", audioHardwareString)
+                if not audioHardwareString:
                     print("[DEBUG]: No Audio Recording Device Present, turning audio recording off")
                     self.config["audio"] = False
                 else:
@@ -167,18 +167,33 @@ class Moment(threading.Thread):
                     start_audio_command = "arecord "+ self.config["recordingLocation"] + str(self.filename) + ".wav"
                     Popen(start_audio_command, shell=True)
             if self.config["video"] == True:
-                start_video_command = "libcamera-vid -t 0 --framerate" + self.config["framerate"] + " --qt-preview --hflip --vflip --autofocus -o " + self.config["recordingLocation"] + \
-                    str(self.filename) + ".h264 --width " + \
-                    self.resolution[self.config["resolution"]]["width"] + \
-                    " --height "+ self.resolution[self.config["resolution"]]["height"]
-                print("[DEBUG]:Start Recording Command: " + start_video_command)
-                Popen(
-                    start_video_command,
-                    shell=True)
-                sleep(5)
-                Popen(['xdotool', 'key', 'alt+F11'])
+                # Check to see if Video Hardware Works
+                print(
+                    "[DEBUG]: Checking Video Hardware")
+                videoHardware = Popen(
+                    'vcgencmd get_camera | grep "libcamera interfaces=1"', stdout=PIPE, stderr=STDOUT, shell=True)
+                stdout, stderr = videoHardware.communicate()
+                videoHardware.wait()
+                videoHardwareString = stdout.rstrip().decode()
+                print("[DEBUG:] Video Hardware Status =", videoHardwareString)
+                if not videoHardwareString:
+                    print("[DEBUG]: No Video Recording Hardware Present, turning video recording off")
+                    self.config["video"] = False
+                else:
+                    start_video_command = "libcamera-vid -t 0 --framerate" + self.config["framerate"] + " --qt-preview --hflip --vflip --autofocus -o " + self.config["recordingLocation"] + \
+                        str(self.filename) + ".h264 --width " + \
+                        self.resolution[self.config["resolution"]]["width"] + \
+                        " --height "+ self.resolution[self.config["resolution"]]["height"]
+                    print("[DEBUG]:Start Recording Command: " + start_video_command)
+                    Popen(
+                        start_video_command,
+                        shell=True)
+                    sleep(5)
+                    Popen(['xdotool', 'key', 'alt+F11'])
             if self.config["video"] == False and self.config["audio"] == False:
                 print("[DEBUG]: No Moment Recording In Progress, Please Check Hardware")
+                Text(self.app, color="red", grid=[
+                    0, 7], text="\n  ERROR: Check Recording Hardware\n Or Config", size=22)
         else:
             print("[DEBUG]:Recording already in progress")
 

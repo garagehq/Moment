@@ -167,7 +167,7 @@ class Moment(threading.Thread):
                     start_audio_command = "arecord "+ self.config["recordingLocation"] + str(self.filename) + ".wav"
                     Popen(start_audio_command, shell=True)
             if self.config["video"] == True:
-                start_video_command = "libcamera-vid -t 0 --qt-preview --hflip --vflip --autofocus -o " + self.config["recordingLocation"] + \
+                start_video_command = "libcamera-vid -t 0 --framerate" + self.config["framerate"] + " --qt-preview --hflip --vflip --autofocus -o " + self.config["recordingLocation"] + \
                     str(self.filename) + ".h264 --width " + \
                     self.resolution[self.config["resolution"]]["width"] + \
                     " --height "+ self.resolution[self.config["resolution"]]["height"]

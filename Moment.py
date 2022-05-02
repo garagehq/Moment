@@ -4,7 +4,7 @@ from guizero import App, Text, Window
 from time import sleep
 from urllib import urlopen
 import datetime
-from os import popen
+from os import popen, path
 import socket
 from subprocess import PIPE, STDOUT, Popen
 import RPi.GPIO as GPIO  # Import Raspberry Pi GPIO library
@@ -25,17 +25,29 @@ class Moment(threading.Thread):
         self.startTime = 0
         
         # Load the Config File
-        self.config_audio = False
-        self.config_video = True
-        self.config_framerate = "30"
-        self.config_timesegment = 60
-        self.config_recordinglocation = "/home/pi/Videos/"
-        self.config_fullRawSaveLocation = "/home/pi/Moment_Save/raw/"
-        self.config_momentSaveLocation = "/home/pi/Moment_Save/final/"
-        self.config_drivelocation = "/home/pi/drive/Garage_Videos/"
-        self.config_loglocation = " /home/pi/Moment.log"
-        self.config_logcommand = " 2>&1 " + self.config_loglocation
-        self.config_log = True
+        
+        # Defaults
+        self.config = {
+            "audio" : False,
+            "video": True,
+            "framerate": "30",
+            "resolution": {
+                "width": "1920",
+                "height": "1080"
+            },
+            "timeSegment": "60",
+            "recordingLocation": "/home/pi/Videos/",
+            "fullRawSaveLocation": "/home/pi/Moment_Save/raw/",
+            "momentSaveLocation": "/home/pi/Moment_Save/final/",
+            "driveLocation": "/home/pi/drive/Garage_Videos/",
+            "logLocation": "/home/pi/Moment_Save/logs/",
+            "logCommand": " 2>&1 " + self.config["logLocation"],
+            "log": True
+        }
+
+        # Check to see if there is a config file, if not, use the defaults
+        # TODO: Add a check to see if the config file is valid
+        
 
         self.app = App(layout="grid", title="Camera Controls",
                        bg="black", width=480, height=480)
@@ -60,11 +72,11 @@ class Moment(threading.Thread):
 
     def run(self):
         # Configure the Directory for the moments and clear out past unsaved moments
-        Popen("rm -rf " + self.config_recordinglocation + "*", shell=True).wait()
-        Popen(["mkdir",'-p', self.config_recordinglocation]).wait()
-        Popen("rm -rf " + self.config_fullRawSaveLocation + "*", shell=True).wait()
-        Popen(["mkdir", '-p', self.config_fullRawSaveLocation]).wait()
-        Popen(["mkdir", '-p', self.config_momentSaveLocation]).wait()
+        Popen("rm -rf " + self.config["recordingLocation"] + "*", shell=True).wait()
+        Popen(["mkdir",'-p', self.config["recordingLocation"]]).wait()
+        Popen("rm -rf " + self.config["fullRawSaveLocation"] + "*", shell=True).wait()
+        Popen(["mkdir", '-p', self.config["fullRawSaveLocation"]]).wait()
+        Popen(["mkdir", '-p', self.config["momentSaveLocation"]]).wait()
 
         # Pull all the Network Information
         gw = popen("ip -4 route show default").read().split()
@@ -121,7 +133,7 @@ class Moment(threading.Thread):
             self.filename = self.timestamp()
             # get current time
             self.startTime = datetime.datetime.now()
-            if self.config_audio == True:
+            if self.config["audio"] == True:
                 # Check for Audio USB Devices before starting arecord
                 print(
                     "[DEBUG]: Checking Audio Devices")
@@ -132,21 +144,24 @@ class Moment(threading.Thread):
                 print("[DEBUG:] Audio Device Status =", audioDevicesString)
                 if not audioDevicesString:
                     print("[DEBUG]: No Audio Recording Device Present, turning audio recording off")
-                    self.config_audio = False
+                    self.config["audio"] = False
                 else:
                     print("[DEBUG]:Start Audio Recording")
                     Popen("amixer set Capture 100%", shell=True).wait()
-                    start_audio_command = "arecord "+ self.config_recordinglocation + str(self.filename) + ".wav"
+                    start_audio_command = "arecord "+ self.config["recordingLocation"] + str(self.filename) + ".wav"
                     Popen(start_audio_command, shell=True)
-            if self.config_video == True:
-                start_video_command = "libcamera-vid -t 0 --qt-preview --hflip --vflip --autofocus -o " + self.config_recordinglocation + str(self.filename) + ".h264 --width 1920 --height 1080 "
+            if self.config["video"] == True:
+                start_video_command = "libcamera-vid -t 0 --qt-preview --hflip --vflip --autofocus -o " + self.config["recordingLocation"] + \
+                    str(self.filename) + ".h264 --width " + \
+                    self.config["resolution"]["width"] + \
+                    " --height "+self.config["resolution"]["height"]
                 print("[DEBUG]:Start Recording Command: " + start_video_command)
                 Popen(
                     start_video_command,
                     shell=True)
                 sleep(5)
                 Popen(['xdotool', 'key', 'alt+F11'])
-            if self.config_video == False and self.config_audio == False:
+            if self.config["video"] == False and self.config["audio"] == False:
                 print("[DEBUG]: No Moment Recording In Progress, Please Check Hardware")
         else:
             print("[DEBUG]:Recording already in progress")
@@ -205,13 +220,33 @@ class Moment(threading.Thread):
                 Text(self.uploadWindow, color="white", grid=[
                     0, 4], text="Upload Started", size=24)
                 self.uploadWindow.update()
-                upload_recording_command = "rsync -avz --progress --partial" + str(self.config_momentSaveLocation) + str(self.config_drivelocation)
-                print("[DEBUG]:Upload Moment Command: " +
-                      upload_recording_command)
-                upload_recording = Popen(['rsync', '-avz', '--progress', '--partial',
-                                         self.config_momentSaveLocation, self.config_drivelocation])
-                upload_recording.wait()
-                sleep(2)
+                
+                # Check to see if drive is mounted
+                if path.ismount(self.config["driveLocation"]):
+                    upload_recording_command = "rsync -avz --progress --partial" + str(self.config["momentSaveLocation"]) + str(self.config["driveLocation"])
+                    print("[DEBUG]:Upload Moment Command: " +
+                        upload_recording_command)
+                    upload_recording = Popen(['rsync', '-avz', '--progress', '--partial',
+                                            self.config["momentSaveLocation"], self.config["driveLocation"]])
+                    upload_recording.wait()
+                    sleep(2)
+                else:
+                    print("[DEBUG]:No Drive Mounted, Please Mount Drive")
+                    Text(self.uploadWindow, color="white", grid=[
+                        0, 5], text="ERROR:No Drive Mounted", size=22)
+                    self.uploadWindow.update()
+                    sleep(1)
+                    Text(self.uploadWindow, color="white", grid=[
+                        0, 6], text="Fix via config server and try again", size=20)
+                    self.uploadWindow.update()
+                    sleep(1)
+                    Text(self.uploadWindow, color="white", grid=[
+                        0, 6], text="Returning to Main Window", size=22)
+                    self.uploadWindow.update()
+                    sleep(2)
+                    print("[DEBUG]:Hiding Upload Window")
+                    self.uploadWindow.hide()
+                    return
 
                 Text(self.uploadWindow, color="white", grid=[
                     0, 5], text="Upload Finished!", size=24)
@@ -223,7 +258,7 @@ class Moment(threading.Thread):
                 sleep(2)
 
                 # Remove all moment recordings
-                remove_recordings_command = "rm -rf " + self.config_momentSaveLocation + "*"
+                remove_recordings_command = "rm -rf " + self.config["momentSaveLocation"] + "*"
                 print("[DEBUG]:Remove Moment Command: " + remove_recordings_command)
                 remove_moment = Popen(remove_recordings_command, shell=True)
                 remove_moment.wait()
@@ -266,10 +301,10 @@ class Moment(threading.Thread):
 
     def killRecording(self):
         print("[DEBUG]:Killing Recording...")
-        if self.config_video == True:
+        if self.config["video"] == True:
             print("[DEBUG]:Killing Video...")
             Popen(['pkill', 'libcamera-vid']).wait()
-        if self.config_audio == True:
+        if self.config["audio"] == True:
             print("[DEBUG]:Killing Audio...")
             Popen(['pkill', 'arecord']).wait()
         return
@@ -291,7 +326,7 @@ class Moment(threading.Thread):
                 endTime = datetime.datetime.now()
                 # Calculate the difference between the start and end time in minutes
                 diff = endTime - self.startTime
-                diff_segment = diff.seconds / self.config_timesegment
+                diff_segment = diff.seconds / self.config["timeSegment"]
                 print("[DEBUG]:Full Recording Duration: " +
                       str(diff_segment) + " minutes")
                 # If the difference is greater than the threshold, then process the video
@@ -344,19 +379,19 @@ class Moment(threading.Thread):
                 self.processWindow.update()
 
                 sleep(2)
-                if self.config_audio == True and self.config_video == False:
+                if self.config["audio"] == True and self.config["video"] == False:
                     print("[DEBUG]:Processing Audio Only")
                     print("[DEBUG]:Cutting the .wav using ffmpeg while transcoding to .mp3")
-                    cutting_audio = "ffmpeg -v debug -sseof -" + str(self.time_counter * self.config_timesegment) + " -i " + str(self.config_recordinglocation) + str(
-                        self.filename) + ".wav -vn -ar 44100 -ac 2 -b:a 192k" + str(self.config_momentSaveLocation) + str(self.filename) + ".mp3"
+                    cutting_audio = "ffmpeg -v debug -sseof -" + str(self.time_counter * self.config["timeSegment"]) + " -i " + str(self.config["recordingLocation"]) + str(
+                        self.filename) + ".wav -vn -ar 44100 -ac 2 -b:a 192k" + str(self.config["momentSaveLocation"]) + str(self.filename) + ".mp3"
                     print("[DEBUG] Cutting .wav while transcoding to .mp3 Command: " +
                           cutting_audio)
                     splitAudio = Popen(
-                        ['ffmpeg', '-v', 'debug', '-sseof', '-'+str(self.time_counter * self.config_timesegment), '-i', str(self.config_recordinglocation) + str(
-                            self.filename) + '.wav', '-vn', '-ar', '44100', '-ac', '2', '-b:a', '192k', str(self.config_momentSaveLocation) + str(self.filename) + '.mp3'])
+                        ['ffmpeg', '-v', 'debug', '-sseof', '-'+str(self.time_counter * self.config["timeSegment"]), '-i', str(self.config["recordingLocation"]) + str(
+                            self.filename) + '.wav', '-vn', '-ar', '44100', '-ac', '2', '-b:a', '192k', str(self.config["momentSaveLocation"]) + str(self.filename) + '.mp3'])
                     splitAudio.wait()
                     print("[DEBUG]:Audio Moment Processed and move to " +
-                          str(self.config_momentSaveLocation) + '.mp3')
+                          str(self.config["momentSaveLocation"]) + '.mp3')
                     Text(self.processWindow, color="white", grid=[
                         0, 4], text="-Finished Audio Processing", size=22)
                     self.processWindow.update()
@@ -367,15 +402,15 @@ class Moment(threading.Thread):
                         0, 7], text="and Restarting Recording", size=22)
                     self.processWindow.update()
 
-                elif self.config_video == True:
+                elif self.config["video"] == True:
                     print("[DEBUG]:Processing Video ")
                     print("[DEBUG]:Process .h264 raw video using  into an .mp4")
-                    raw_conversation_command = "ffmpeg -v debug -framerate " + str(self.config_framerate) + " -i " + str(self.config_recordinglocation) + str(
-                        self.filename) + ".h264 -c copy " + str(self.config_fullRawSaveLocation) + str(self.filename) + ".mp4"
+                    raw_conversation_command = "ffmpeg -v debug -framerate " + str(self.config["framerate"]) + " -i " + str(self.config["recordingLocation"]) + str(
+                        self.filename) + ".h264 -c copy " + str(self.config["fullRawSaveLocation"]) + str(self.filename) + ".mp4"
                     print("[DEBUG] Process Video Conversion Command: " + raw_conversation_command)
                     createMp4 = Popen(
-                        ['ffmpeg', '-v','debug', '-framerate', str(self.config_framerate), '-i', str(self.config_recordinglocation) + str(
-                            self.filename) + '.h264', '-c', 'copy', str(self.config_fullRawSaveLocation) + str(self.filename) + '.mp4'])
+                        ['ffmpeg', '-v','debug', '-framerate', str(self.config["framerate"]), '-i', str(self.config["recordingLocation"]) + str(
+                            self.filename) + '.h264', '-c', 'copy', str(self.config["fullRawSaveLocation"]) + str(self.filename) + '.mp4'])
                     createMp4.wait()
 
                     Text(self.processWindow, color="white", grid=[
@@ -384,17 +419,17 @@ class Moment(threading.Thread):
                     sleep(1)
 
                     # TODO: Merge Audio and Video
-                    if self.config_audio == True:
+                    if self.config["audio"] == True:
                         print("[DEBUG]:Merging Audio and Video")
 
                     print("[DEBUG]:Cutting the Proccessed .mp4 Video using ffmpeg")
-                    cutting_processed_video = "ffmpeg -v debug -sseof -" + str(self.time_counter * self.config_timesegment) + " -i " + str(self.config_fullRawSaveLocation) + str(
-                        self.filename) + ".mp4 -c copy" + str(self.config_momentSaveLocation) + str(self.filename) + ".mp4"
+                    cutting_processed_video = "ffmpeg -v debug -sseof -" + str(self.time_counter * self.config["timeSegment"]) + " -i " + str(self.config["fullRawSaveLocation"]) + str(
+                        self.filename) + ".mp4 -c copy" + str(self.config["momentSaveLocation"]) + str(self.filename) + ".mp4"
                     print("[DEBUG] Cutting Processed Video Command: " +
                         cutting_processed_video)
                     splitMp4 = Popen(
-                        ['ffmpeg', '-v', 'debug', '-sseof', '-'+str(self.time_counter * self.config_timesegment), '-i', str(self.config_fullRawSaveLocation) + str(
-                            self.filename) + '.mp4', "-c", "copy", str(self.config_momentSaveLocation) + str(self.filename) + '.mp4'])
+                        ['ffmpeg', '-v', 'debug', '-sseof', '-'+str(self.time_counter * self.config["timeSegment"]), '-i', str(self.config["fullRawSaveLocation"]) + str(
+                            self.filename) + '.mp4', "-c", "copy", str(self.config["momentSaveLocation"]) + str(self.filename) + '.mp4'])
                     splitMp4.wait()
 
                     Text(self.processWindow, color="white", grid=[
@@ -403,7 +438,7 @@ class Moment(threading.Thread):
                     sleep(1)
 
                     print("[DEBUG]:Finished Processing Video, "+
-                          str(self.filename)+".mp4 saved to "+self.config_fullRawSaveLocation)
+                          str(self.filename)+".mp4 saved to "+self.config["fullRawSaveLocation"])
 
                     Text(self.processWindow, color="white", grid=[
                         0, 6], text="Returning to Main Window", size=22)
@@ -430,7 +465,7 @@ class Moment(threading.Thread):
         endTime = datetime.datetime.now()
         # Calculate the difference between the start and end time in minutes
         diff = endTime - self.startTime
-        diff_segment = diff.seconds / self.config_timesegment
+        diff_segment = diff.seconds / self.config["timeSegment"]
 
         print("[DEBUG]:Full Moment Duration: " +
               str(diff_segment) + " minutes")

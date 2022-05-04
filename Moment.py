@@ -9,7 +9,113 @@ import socket
 from subprocess import PIPE, STDOUT, Popen
 import RPi.GPIO as GPIO  # Import Raspberry Pi GPIO library
 import threading
+import sys
+import cgi
+import json
+from http.server import HTTPServer, SimpleHTTPRequestHandler
 
+
+HOST_NAME = "0.0.0.0"
+PORT = 8080
+MOMENT_CONFIG_FILE = '/home/pi/.config/Moment/moment.config'
+
+
+def read_file(path):
+    """function to read a dictionary file"""
+    try:
+        with open(path) as f:
+            file = f.read()
+            data = json.loads(file)
+            f.close()
+    except Exception as e:
+        data = e
+
+    return data
+
+
+def save_file(path, data):
+    """function to save data to a dictionary file"""
+    try:
+        with open(path, 'w') as f:
+            json.dump(data, f)
+            f.close()
+    except Exception as e:
+        data = e
+    return data
+
+
+class PythonServer(SimpleHTTPRequestHandler):
+    """Python HTTP Server that handles GET and POST requests"""
+
+    def do_GET(self):
+        if self.path == '/':
+            moment_config = read_file(MOMENT_CONFIG_FILE)
+            print("moment_config : ", moment_config)
+            html_file = '<!DOCTYPE html><html> <body> <h2>Simple Python HTTP Server Form</h2> <form method="POST", enctype="multipart/form-data" action="/success"> <label for="audio">Audio:</label><br><input type="text" name="audio" value="' + \
+                str(moment_config['audio']) + '"><br><label for="video">Video:</label><br><input type="text" name="video" value="' + \
+                str(moment_config['video']) + '"><br><label for="raw_audio">Raw Audio:</label><br><input type="text" name="raw_audio" value="' + \
+                str(moment_config['raw_audio']) + '"><br><label for="framerate">Framerate:</label><br><input type="text" name="framerate" value="' + \
+                moment_config['framerate'] + \
+                '"><br><input type="submit" value="Submit"> </form><div><h2>Links:</h2> <a href="https://drive.google.com/drive/u/0/folders/1nMJ7mOO1B0X4He8TgJxdbnIvUouT5YlB">View Garage Moments</a><br><a href="http://' + \
+                HOST_NAME + ':80">Configure Moment Wifi.</a><br></div></body></html>'
+            self.send_response(200, "OK")
+            self.end_headers()
+            self.wfile.write(bytes(html_file, "utf-8"))
+
+    def do_POST(self):
+        if self.path == '/success':
+
+            ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
+            pdict['boundary'] = bytes(pdict['boundary'], 'utf-8')
+
+            if ctype == 'multipart/form-data':
+                error = False
+                moment_config = read_file(MOMENT_CONFIG_FILE)
+                fields = cgi.parse_multipart(self.rfile, pdict)
+                audio = fields.get("audio")[0]
+                video = fields.get("video")[0]
+                raw_audio = fields.get("raw_audio")[0]
+                framerate = fields.get("framerate")[0]
+                moment_config = read_file(MOMENT_CONFIG_FILE)
+                # check to see if booleans is either 'True' or 'False'
+                errorText = ""
+                if audio == 'True' or audio == 'False':
+                    # change boolean from string to boolean
+                    moment_config['audio'] = audio
+                else:
+                    error = True
+                    errorText += "<b>Audio must be either True or False.</b><br>"
+                if video == 'True' or video == 'False':
+                    moment_config['video'] = video
+                else:
+                    error = True
+                    errorText += "<b>Video must be either True or False.</b><br>"
+                if raw_audio == 'True' or raw_audio == 'False':
+                    moment_config['raw_audio'] = raw_audio
+                else:
+                    error = True
+                    errorText += "<b>Raw Audio must be either True or False.</b><br>"
+                # check to see if framerate is a number if not set to 30
+                if framerate.isdigit() and int(framerate) > 20 and int(framerate) < 120:
+                    moment_config['framerate'] = str(framerate)
+                else:
+                    moment_config['framerate'] = '30'
+                    error = True
+                    errorText += "<b>Framerate must be either a number over 20 and below 120.</b><br>"
+
+                save_file(MOMENT_CONFIG_FILE, moment_config)
+
+                if error == False:
+                    html = f"<html><head></head><body><h1>Moment config successfully recorded Updated. Please Reboot Device in Order to use new config.</h1></body></html>"
+                else:
+                    html = f"<html><head></head><body><h1>Error, please try again.</h1>" + \
+                        errorText + '<br><div><a href="http://' + HOST_NAME + \
+                        ':'+str(PORT)+'">Back</a></div><br></body></html>'
+
+                self.send_response(200, "OK")
+                self.end_headers()
+                self.wfile.write(bytes(html, "utf-8"))
+                
 class Moment(threading.Thread):
     def __init__(self):
         super().__init__()
@@ -57,12 +163,30 @@ class Moment(threading.Thread):
                 "height": "2160"
             }
         }
-
+        
         # Check to see if there is a config file, if not, use the defaults
         # TODO: Add a check to see if the config file is valid
-        if path.exists("/home/pi/.config/Moment_Config.txt"):
+        if path.exists(MOMENT_CONFIG_FILE):
             # load configuation variables
             print("[DEBUG]: Loading Config File")
+            moment_config = read_file(MOMENT_CONFIG_FILE)
+            print("[DEBUG]:moment_config : ", moment_config)
+            
+            if(moment_config != self.config):
+                print("[DEBUG]:Config File is different from default")
+                if(moment_config["video"] != self.config["video"]):
+                    self.config["video"] = moment_config["video"]
+                if(moment_config["audio"] != self.config["audio"]):
+                    self.config["audio"] = moment_config["audio"]
+                if(moment_config["raw_audio"] != self.config["raw_audio"]):
+                    self.config["raw_audio"] = moment_config["raw_audio"]
+                if(moment_config["framerate"] != self.config["framerate"]):
+                    self.config["framerate"] = moment_config["framerate"]
+                if(moment_config["resolution"] != self.config["resolution"]):
+                    self.config["resolution"] = moment_config["resolution"]
+                if(moment_config["time_segment"] != self.config["time_segment"]):
+                    self.config["time_segment"] = moment_config["time_segment"]
+                print("[DEBUG]:Default Variables have been updated")
 
         self.app = App(layout="grid", title="Camera Controls",
                        bg="black", width=480, height=480)
@@ -130,7 +254,7 @@ class Moment(threading.Thread):
             0, 5], text="CONFIG:", size=26)
 
         Text(self.app, color="white", grid=[
-            0, 6], text="http://" + str(self.ipaddr) + ":8080", size=26)
+            0, 6], text="http://" + str(self.ipaddr) + ":" + str(PORT), size=26)
 
         Text(self.app, color="white", grid=[
             0, 7], text="\n  Press (-) to Upload\n   Press (+) to Save Rec.", size=26)
@@ -138,10 +262,23 @@ class Moment(threading.Thread):
         Text(self.app, color="white", grid=[
             0, 8], text="        (-)             (+)", size=35)
 
-        t = threading.Thread(target=self.start_recording)
-        t.start()
+        recorder_thread = threading.Thread(target=self.start_recording)
+        recorder_thread.start()
+        server_thread = threading.Thread(target=self.start_server)
+        server_thread.start()
 
         self.app.display()
+    
+    def start_server(self):
+        server = HTTPServer((HOST_NAME, PORT), PythonServer)
+        print(f"Config Server Started at http://{HOST_NAME}:{PORT}")
+
+        try:
+            server.serve_forever()
+        except KeyboardInterrupt:
+            server.server_close()
+            print("Server stopped successfully")
+            sys.exit(0)
 
     def start_recording(self):
         if self.recording == False:

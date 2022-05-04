@@ -28,9 +28,9 @@ class Moment(threading.Thread):
         
         # Defaults
         self.config = {
-            "audio" : False,
-            "video": True,
-            "raw_audio": False,
+            "audio" : 'False',
+            "video": 'True',
+            "raw_audio": 'False',
             "framerate": "30",
             "resolution": "1080p",
             "time_segment": 60,
@@ -39,7 +39,7 @@ class Moment(threading.Thread):
             "moment_save_location": "/home/pi/Moment_Save/final/",
             "drive_location": "/home/pi/drive/Garage_Videos/",
             "log_location": "/home/pi/Moment_Save/logs/",
-            "log": True,
+            "log": 'True',
             "orientation": "vertical"
         }
         
@@ -130,7 +130,7 @@ class Moment(threading.Thread):
             0, 5], text="CONFIG:", size=26)
 
         Text(self.app, color="white", grid=[
-            0, 6], text="http://" + str(self.ipaddr) + ":80", size=26)
+            0, 6], text="http://" + str(self.ipaddr) + ":8080", size=26)
 
         Text(self.app, color="white", grid=[
             0, 7], text="\n  Press (-) to Upload\n   Press (+) to Save Rec.", size=26)
@@ -151,7 +151,7 @@ class Moment(threading.Thread):
             self.filename = self.timestamp()
             # get current time
             self.start_time = datetime.datetime.now()
-            if self.config["audio"] == True:
+            if self.config["audio"] == 'True':
                 # Check for Audio USB Devices before starting arecord
                 print(
                     "[DEBUG]: Checking Audio Hardware")
@@ -162,13 +162,13 @@ class Moment(threading.Thread):
                 print("[DEBUG:] Audio Device Status =", audio_hardware_string)
                 if not audio_hardware_string:
                     print("[DEBUG]: No Audio Recording Device Present, turning audio recording off")
-                    self.config["audio"] = False
+                    self.config["audio"] = 'False'
                 else:
                     print("[DEBUG]:Start Audio Recording")
                     Popen("amixer set Capture 100%", shell=True).wait()
                     start_audio_command = "arecord "+ self.config["recording_location"] + str(self.filename) + ".wav"
                     Popen(start_audio_command, shell=True)
-            if self.config["video"] == True:
+            if self.config["video"] == 'True':
                 # Check to see if Video Hardware Works
                 print(
                     "[DEBUG]: Checking Video Hardware")
@@ -180,7 +180,7 @@ class Moment(threading.Thread):
                 print("[DEBUG:] Video Hardware Status =", video_hardware_string)
                 if not video_hardware_string:
                     print("[DEBUG]: No Video Recording Hardware Present, turning video recording off")
-                    self.config["video"] = False
+                    self.config["video"] = 'False'
                 else:
                     start_video_command = "libcamera-vid -t 0 --framerate " + self.config["framerate"] + " --qt-preview --hflip --vflip --autofocus -o " + self.config["recording_location"] + \
                         str(self.filename) + ".h264 --width " + \
@@ -192,7 +192,7 @@ class Moment(threading.Thread):
                         shell=True)
                     sleep(5)
                     Popen(['xdotool', 'key', 'alt+F11'])
-            if self.config["video"] == False and self.config["audio"] == False:
+            if self.config["video"] == 'False' and self.config["audio"] == 'False':
                 print("[DEBUG]: No Moment Recording In Progress, Please Check Hardware")
                 Text(self.app, color="red", grid=[
                     0, 7], text="\n  ERROR: Check Recording Hardware\n Or Config", size=22)
@@ -267,10 +267,12 @@ class Moment(threading.Thread):
                 
                 # Check to see if drive is mounted
                 if path.ismount(self.config["drive_location"]):
-                    upload_recording_command = "rsync -avz --progress --partial" + str(self.config["moment_save_location"]) + str(self.config["drive_location"])
+                    upload_recording_command = "rsync -avzP --update --append --remove-source-files" + \
+                        str(self.config["moment_save_location"]
+                            ) + str(self.config["drive_location"])
                     print("[DEBUG]:Upload Moment Command: " +
                         upload_recording_command)
-                    upload_recording = Popen(['rsync', '-avz', '--progress', '--partial',
+                    upload_recording = Popen(['rsync', '-avzP', '--update', '--append', '--remove-source-files',
                                             self.config["moment_save_location"], self.config["drive_location"]])
                     upload_recording.wait()
                     sleep(2)
@@ -301,11 +303,6 @@ class Moment(threading.Thread):
                 self.upload_window.update()
                 sleep(2)
 
-                # Remove all moment recordings
-                remove_recordings_command = "rm -rf " + self.config["moment_save_location"] + "*"
-                print("[DEBUG]:Remove Moment Command: " + remove_recordings_command)
-                remove_moment = Popen(remove_recordings_command, shell=True)
-                remove_moment.wait()
 
                 print("[DEBUG]:Hiding Upload Window")
                 self.upload_window.hide()
@@ -345,10 +342,10 @@ class Moment(threading.Thread):
 
     def kill_recording(self):
         print("[DEBUG]:Killing Recording...")
-        if self.config["video"] == True:
+        if self.config["video"] == 'True':
             print("[DEBUG]:Killing Video...")
             Popen(['pkill', 'libcamera-vid']).wait()
-        if self.config["audio"] == True:
+        if self.config["audio"] == 'True':
             print("[DEBUG]:Killing Audio...")
             Popen(['pkill', 'arecord']).wait()
         return
@@ -425,7 +422,7 @@ class Moment(threading.Thread):
 
                 sleep(2)
                 
-                if self.config["audio"] == True and self.config["video"] == False:
+                if self.config["audio"] == 'True' and self.config["video"] == 'False':
                     print("[DEBUG]:Processing Audio Only")
                     print("[DEBUG]:Cutting the .wav using ffmpeg while transcoding to .mp3")
                     cutting_audio = "ffmpeg -v debug -sseof -" + str(self.time_counter * self.config["time_segment"]) + " -i " + str(self.config["recording_location"]) + str(
@@ -438,7 +435,7 @@ class Moment(threading.Thread):
                     split_audio.wait()
                     print("[DEBUG]:Audio Moment Processed and move to " +
                           str(self.config["moment_save_location"]) + '.mp3')
-                    if self.config["raw_audio"] == False:
+                    if self.config["raw_audio"] == 'False':
                         # ffmpeg -i <input_file> -af "highpass=f=200, lowpass=f=3000" <output_file>
                         self.filename += ".adj"
                         process_audio = "ffmpeg -i " + str(self.config["moment_save_location"]) + str(
@@ -458,7 +455,7 @@ class Moment(threading.Thread):
                         0, 7], text="and Restarting Recording", size=22)
                     self.process_window.update()
 
-                elif self.config["video"] == True:
+                elif self.config["video"] == 'True':
                     print("[DEBUG]:Processing Video ")
                     print("[DEBUG]:Process .h264 raw video using  into an .mp4")
                     raw_conversation_command = "ffmpeg -v debug -framerate " + str(self.config["framerate"]) + " -i " + str(self.config["recording_location"]) + str(
@@ -475,10 +472,10 @@ class Moment(threading.Thread):
                     sleep(1)
 
                     # TODO: Merge Audio and Video
-                    if self.config["audio"] == True:
+                    if self.config["audio"] == 'True':
                         print("[DEBUG]:Merging Audio and Video")
                         
-                        if self.config["raw_audio"] == False:
+                        if self.config["raw_audio"] == 'False':
                             # ffmpeg -i <input_file> -af "highpass=f=200, lowpass=f=3000" <output_file>
                             process_audio = "ffmpeg -i " + str(self.config["recording_location"]) + str(
                                 self.filename) + ".mp3" + ' -af "highpass=f=200, lowpass=f=3000" ' + str(self.config["moment_save_location"]) + str(self.filename) + ".mp3"

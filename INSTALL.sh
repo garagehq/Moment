@@ -94,6 +94,10 @@ echo  "[DEBUG]:Installing Pip Requirements"
 python3 -m pip install --upgrade pip
 python3 -m pip install -r requirements.txt
 python3 -m pip install --upgrade Pillow
+# Install Moment Config
+echo "[DEBUG]:Install Moment Config:"
+sudo mkdir -p /home/pi/.config/Moment
+sudo cp -rf config/moment.config /home/pi/.config/Moment/
 echo  "[DEBUG]:Installing MomentCamera AutoStart service"
 sudo install Moment.py /usr/bin/
 sudo mkdir -p /home/pi/.config/autostart

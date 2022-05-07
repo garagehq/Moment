@@ -113,39 +113,3 @@ echo "[SUCCESS]: Installation Finished, Rebooting Now..."
 sleep 5
 sudo reboot now
 
-# The following command gets the video preview working as well as orients it correctly and sets the resolution to 1080 HD
-
-# libcamera-vid -t 0 --qt-preview --hflip --vflip --autofocus --keypress -o %03d.h264 --segment 10000 width 1920 --height 1080 & sleep 2 && xdotool key alt+F11
-# with keypress enabled, everytime you press "f" and then enter in the stoud, it will refocus
-# the sleep and the xdotool commands are to make sure the video preview is running in fullscreen
-
-# [TODO]: Add a script that automatically refocuses every 30 seconds
-
-# The following command converts the video stream into a valid mp4 file
-# ffmpeg -framerate 30 -i <FILE TO CHANGE> -c copy <FILE TO CHANGE>.mp4
-# The above command only seems to be working for the 000.h264 file, but I'm not sure why.
-#
-# Afterwards create the file list for the video stream
-#echo file file1.mp4 >  mylist.txt 
-#echo file file2.mp4 >> mylist.txt
-#echo file file3.mp4 >> mylist.txt
-#
-#:: Concatenate Files
-#ffmpeg -f concat -i mylist.txt -c copy output.mp4
-
-
-#rsync
-# rsync -avz --progress --partial /home/pi/Moment_Save/final/ /home/pi/drive/Garage_Videos/
-
-# camera command
-#libcamera-vid -t 0 --framerate 30 --qt-preview --hflip --vflip --autofocus --keypress -o 000.h264 --width 1920 --height 1080
-
-# PROCESS VIDEO COMMAND
-# ffmpeg -framerate 30 -i /home/pi/Videos/20220426_215158.h264 -c copy /home/pi/Downloads/000.mp4
-# ffmpeg -framerate 30 -i 000.h264 -c copy 000.mp4
-# ffmpeg -framerate 30 -i /home/pi/Downloads/20220426_214017.h264 -c copy /home/pi/Downloads/20220426_214017.mp4
-
-# CUTTING COMMAND
-# ffmpeg -v debug -sseof -6 -i /home/pi/Downloads/20220427_142940.mp4 /home/pi/Downloads/1.mp4 
-# ffmpeg -v debug -sseof -5 -i /home/pi/Downloads/20220427_142940.mp4 -c copy /home/pi/Downloads/007-edited.mp4
-

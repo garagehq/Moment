@@ -14,6 +14,17 @@ import cgi
 import json
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 
+# [TODO]: Add a script that automatically refocuses every 30 seconds
+
+# The following command gets the video preview working as well as orients it correctly and sets the resolution to 1080 HD
+# libcamera-vid -t 0 --qt-preview --hflip --vflip --autofocus --keypress -o <FILENAME>.h264  width 1920 --height 1080 & sleep 2 && xdotool key alt+F11
+# with keypress enabled, everytime you press "f" and then enter in the stoud, it will refocus the sleep and the xdotool commands are to make sure the video preview is running in fullscreen
+
+# PROCESS VIDEO COMMAND
+# ffmpeg -framerate 30 -i <FILE TO CHANGE> -c copy <FILE TO CHANGE>.mp4
+
+# CUTTING COMMAND
+# ffmpeg -v debug -sseof -6 -i 000.mp4 000-1.mp4
 
 HOST_NAME = "0.0.0.0"
 PORT = 8080
@@ -51,12 +62,18 @@ class PythonServer(SimpleHTTPRequestHandler):
         if self.path == '/':
             moment_config = read_file(MOMENT_CONFIG_FILE)
             print("moment_config : ", moment_config)
+            if moment_config['resolution'] == '1080p':
+                resolution_html = '<label for="resolution">Resolution:</label> <select id="resolution" name="resolution" size="1"> <option value="1080p" selected>1080p</option> <option value="2.7k">2.7k</option> <option value="4k">4k</option> </select><br><br>'
+            elif moment_config['resolution'] == '2.7k':
+                resolution_html = '<label for="resolution">Resolution:</label> <select id="resolution" name="resolution" size="1"> <option value="1080p">1080p</option> <option value="2.7k" selected>2.7k</option> <option value="4k">4k</option> </select><br><br>'
+            elif moment_config['resolution'] == '4k':
+                resolution_html = '<label for="resolution">Resolution:</label> <select id="resolution" name="resolution" size="1"> <option value="1080p">1080p</option> <option value="2.7k">2.7k</option> <option value="4k" selected>4k</option> </select><br><br>'
             html_file = '<!DOCTYPE html><html> <body> <h2>Simple Python HTTP Server Form</h2> <form method="POST", enctype="multipart/form-data" action="/success"> <label for="audio">Audio:</label><br><input type="text" name="audio" value="' + \
                 str(moment_config['audio']) + '"><br><label for="video">Video:</label><br><input type="text" name="video" value="' + \
                 str(moment_config['video']) + '"><br><label for="raw_audio">Raw Audio:</label><br><input type="text" name="raw_audio" value="' + \
                 str(moment_config['raw_audio']) + '"><br><label for="framerate">Framerate:</label><br><input type="text" name="framerate" value="' + \
                 moment_config['framerate'] + \
-                '"><br><input type="submit" value="Submit"> </form><div><h2>Links:</h2> <a href="https://drive.google.com/drive/u/0/folders/1nMJ7mOO1B0X4He8TgJxdbnIvUouT5YlB">View Garage Moments</a><br><a href="http://' + \
+                '"><br>' + resolution_html + '<input type="submit" value="Submit"> </form><div><h2>Links:</h2> <a href="https://drive.google.com/drive/u/0/folders/1nMJ7mOO1B0X4He8TgJxdbnIvUouT5YlB">View Garage Moments</a><br><a href="http://' + \
                 HOST_NAME + ':80">Configure Moment Wifi.</a><br></div></body></html>'
             self.send_response(200, "OK")
             self.end_headers()
@@ -76,6 +93,7 @@ class PythonServer(SimpleHTTPRequestHandler):
                 video = fields.get("video")[0]
                 raw_audio = fields.get("raw_audio")[0]
                 framerate = fields.get("framerate")[0]
+                resolution = fields.get("resolution")[0]
                 moment_config = read_file(MOMENT_CONFIG_FILE)
                 # check to see if booleans is either 'True' or 'False'
                 errorText = ""
@@ -95,6 +113,11 @@ class PythonServer(SimpleHTTPRequestHandler):
                 else:
                     error = True
                     errorText += "<b>Raw Audio must be either True or False.</b><br>"
+                if resolution == '1080p' or resolution == '2.7k' or resolution == '4k':
+                    moment_config['resolution'] = resolution
+                else:
+                    error = True
+                    errorText += "<b>Resolution must be either 1080p, 2.7k or 4k.</b><br>"
                 # check to see if framerate is a number if not set to 30
                 if framerate.isdigit() and int(framerate) > 20 and int(framerate) < 120:
                     moment_config['framerate'] = str(framerate)
@@ -212,14 +235,7 @@ class Moment(threading.Thread):
             3, GPIO.FALLING, callback=self.config_menu, bouncetime=1000)
         print("[DEBUG]:Finish Adding Event Detects")
 
-    def run(self):
-        # Configure the Directory for the moments and clear out past unsaved moments
-        Popen("rm -rf " + self.config["recording_location"] + "*", shell=True).wait()
-        Popen(["mkdir",'-p', self.config["recording_location"]]).wait()
-        Popen("rm -rf " + self.config["full_raw_save_location"] + "*", shell=True).wait()
-        Popen(["mkdir", '-p', self.config["full_raw_save_location"]]).wait()
-        Popen(["mkdir", '-p', self.config["moment_save_location"]]).wait()
-
+    def initialize_main_menu(self):
         # Pull all the Network Information
         gw = popen("ip -4 route show default").read().split()
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -261,14 +277,24 @@ class Moment(threading.Thread):
 
         Text(self.app, color="white", grid=[
             0, 8], text="        (-)             (+)", size=35)
+        
+    def run(self):
+        # Configure the Directory for the moments and clear out past unsaved moments
+        Popen("rm -rf " + self.config["recording_location"] + "*", shell=True).wait()
+        Popen(["mkdir",'-p', self.config["recording_location"]]).wait()
+        Popen("rm -rf " + self.config["full_raw_save_location"] + "*", shell=True).wait()
+        Popen(["mkdir", '-p', self.config["full_raw_save_location"]]).wait()
+        Popen(["mkdir", '-p', self.config["moment_save_location"]]).wait()
 
+        self.initialize_main_menu()
+        
         recorder_thread = threading.Thread(target=self.start_recording)
         recorder_thread.start()
         server_thread = threading.Thread(target=self.start_server)
         server_thread.start()
 
         self.app.display()
-    
+      
     def start_server(self):
         server = HTTPServer((HOST_NAME, PORT), PythonServer)
         print(f"Config Server Started at http://{HOST_NAME}:{PORT}")
@@ -554,7 +580,7 @@ class Moment(threading.Thread):
                     self.recording = False
 
                 Text(self.process_window, color="white", grid=[
-                    0, 3], text="[--PROCESSING--]", size=29)
+                    0, 3], text="[--PROCESSING--]", size=27)
                 self.process_window.update()
 
                 sleep(2)
@@ -608,22 +634,71 @@ class Moment(threading.Thread):
                     self.process_window.update()
                     sleep(1)
 
-                    # TODO: Merge Audio and Video
                     if self.config["audio"] == 'True':
                         print("[DEBUG]:Merging Audio and Video")
-                        
+                        print(
+                            "[DEBUG]:Transcoding the .wav using ffmpeg to .mp3")
+                        transcoding_audio = "ffmpeg -v debug" + " -i " + str(self.config["recording_location"]) + str(
+                            self.filename) + ".wav -vn -ar 44100 -ac 2 -b:a 192k" + str(self.config["recording_location"]) + str(self.filename) + ".mp3"
+                        print("[DEBUG] Transcoding the .wav using ffmpeg to .mp3" +
+                              transcoding_audio)
+                        if self.config["raw_audio"] == 'False':
+                            transcoding_audio = Popen(
+                                ['ffmpeg', '-v', 'debug', '-i', str(self.config["recording_location"]) + str(
+                                    self.filename) + '.wav', '-vn', '-ar', '44100', '-ac', '2', '-b:a', '192k', str(self.config["recording_location"]) + str(self.filename) + '.mp3'])
+                            transcoding_audio.wait()
+                            print("[DEBUG]:Audio Moment Transcoded moved to " +
+                              str(self.config["recording_location"]) + '.mp3')
+                        else:
+                            transcoding_audio = Popen(
+                                ['ffmpeg', '-v', 'debug', '-i', str(self.config["recording_location"]) + str(
+                                    self.filename) + '.wav', '-vn', '-ar', '44100', '-ac', '2', '-b:a', '192k', str(self.config["full_raw_save_location"]) + str(self.filename) + '.mp3'])
+                            transcoding_audio.wait()
+                            print("[DEBUG]:Audio Moment Transcoded moved to " +
+                                  str(self.config["full_raw_save_location"]) + '.mp3')
+                        Text(self.process_window, color="green", grid=[
+                            0, 5], text=" -Finished Audio Transcoding", size=22)
+                        self.process_window.update()
+
                         if self.config["raw_audio"] == 'False':
                             # ffmpeg -i <input_file> -af "highpass=f=200, lowpass=f=3000" <output_file>
                             process_audio = "ffmpeg -i " + str(self.config["recording_location"]) + str(
-                                self.filename) + ".mp3" + ' -af "highpass=f=200, lowpass=f=3000" ' + str(self.config["moment_save_location"]) + str(self.filename) + ".mp3"
+                                self.filename) + ".mp3" + ' -af "highpass=f=200, lowpass=f=3000" ' + str(self.config["full_raw_save_location"]) + str(self.filename) + ".mp3"
                             print("[DEBUG] Adjusting Audio Quality: " +
                                 process_audio)
                             process_audio = Popen(
-                                ['ffmpeg', '-i', str(self.config["moment_save_location"]) + str(self.filename) + ".mp3", '-af', 'highpass=f=200, lowpass=f=3000', str(self.config["moment_save_location"]) + str(self.filename) + ".mp3"])
+                                ['ffmpeg', '-i', str(self.config["recording_location"]) + str(self.filename) + ".mp3", '-af', 'highpass=f=200, lowpass=f=3000', str(self.config["full_raw_save_location"]) + str(self.filename) + ".mp3"])
                             process_audio.wait()
-                        else:
-                            print("[DEBUG]:Using Raw Audio Quality")
-                        
+                            Text(self.process_window, color="green", grid=[
+                                0, 5], text=" -Finished HQ Audio Processing", size=22)
+                            self.process_window.update()
+                        # ffmpeg -ss 10 -t 6 -i input.mp3 output.mp3
+                        # Clip Audio
+                        clip_audio = "ffmpeg -ss 0:00:05 -i " + str(self.config["recording_location"]) + str(
+                                self.filename) + ".mp3"  + str(self.config["full_raw_save_location"]) + str(self.filename) + "-clipped.mp3"
+                        print("[DEBUG] Adjusting Audio Quality: " +
+                            clip_audio)
+                        clip_audio = Popen(
+                            ['ffmpeg', '-ss', '0:00:05', '-i', str(self.config["full_raw_save_location"]) + str(self.filename) + ".mp3",  str(self.config["full_raw_save_location"]) + str(self.filename) + "-clipped.mp3"])
+                        clip_audio.wait()
+                        Text(self.process_window, color="green", grid=[
+                            0, 6], text=" -Clipped Audio", size=22)
+                        self.process_window.update()
+                        # Merge Audio and Video
+                        # ffmpeg -i video.mp4 -i audio.mp3 -c:v copy -c:a aac output.mp4
+                        merge_audio_video = "ffmpeg -i " + str(self.config["full_raw_save_location"]) + str(self.filename) + ".mp4" + "-i " + str(
+                            self.config["full_raw_save_location"]) + str(self.filename) + "-clipped.mp3" + " -c:v copy -c:a aac " + str(self.config["full_raw_save_location"]) + str(self.filename) + "-merged.mp4"
+                        print("[DEBUG] Merging Audio and Video: " +
+                              merge_audio_video)
+                        merge_audio_video = Popen(['ffmpeg', '-i', str(self.config["full_raw_save_location"]) + str(self.filename) + ".mp4", '-ss', '0:00:00', '-i', str(
+                            self.config["full_raw_save_location"]) + str(self.filename) + "-clipped.mp3", '-c:v', 'copy', '-c:a', 'aac', str(self.config["full_raw_save_location"]) + str(self.filename) + '-merged.mp4'])
+                        merge_audio_video.wait()
+                        self.filename += "-merged"
+                        print("[DEBUG] Merged Audio and Video")
+                        Text(self.process_window, color="green", grid=[
+                            0, 7], text="-Finished Merging Audio+Video", size=22)
+                        self.process_window.update()
+                        sleep(1)
 
                     print("[DEBUG]:Cutting the Proccessed .mp4 Video using ffmpeg")
                     cutting_processed_video = "ffmpeg -v debug -sseof -" + str(self.time_counter * self.config["time_segment"]) + " -i " + str(self.config["full_raw_save_location"]) + str(
@@ -636,7 +711,7 @@ class Moment(threading.Thread):
                     splitMp4.wait()
 
                     Text(self.process_window, color="green", grid=[
-                        0, 5], text="-Finished Video Splitting", size=22)
+                        0, 8], text="-Finished Video Splitting", size=22)
                     self.process_window.update()
                     sleep(1)
 
@@ -644,9 +719,9 @@ class Moment(threading.Thread):
                           str(self.filename)+".mp4 saved to "+self.config["full_raw_save_location"])
 
                     Text(self.process_window, color="white", grid=[
-                        0, 6], text="Returning to Main Window", size=22)
+                        0, 9], text="Returning to Main Window", size=22)
                     Text(self.process_window, color="white", grid=[
-                        0, 7], text="and Restarting Recording", size=22)
+                        0, 10], text="and Restarting Recording", size=22)
                     self.process_window.update()
 
                 sleep(2)

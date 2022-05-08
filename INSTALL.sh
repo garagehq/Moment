@@ -36,8 +36,15 @@ echo "[DEBUG]:Install Rclone:"
 curl https://rclone.org/install.sh | sudo bash
 mkdir -p /home/pi/drive/Garage_Videos
 
+# Install rclone-webui-react
+cd ~
+git clone https://github.com/rclone/rclone-webui-react.git
+cd rclone-webui-react/
+npm install
+
 # [TODO!]still need to configure rclone (which could be done via the web-interface?)
 # rclone config
+
 # Remember to name it "MemoryDevice" also remember to not change the root directory of the mount point
 sudo install -m 644 *.service /etc/systemd/system/ 
 sudo systemctl start rclone-automount

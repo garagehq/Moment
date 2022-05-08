@@ -31,6 +31,12 @@ https://downloads.raspberrypi.org/raspios_full_armhf/images/raspios_full_armhf-2
 
 We will be segmenting the livestream into 5 second chunks, and then using [ffmpeg](https://superuser.com/questions/521113/join-mp4-files-in-linux) or libcamera to concatinate the video files when necessary. If the filesize of the overall folder of files is over 8GB in total, then we start to delete the files at the beginning as we save new footage. Since we are utilizing a Raspberry Pi Zero 2 as the hardware base - we can utilize one of the two cores to do the recording and the other core can handle the image processing. Every 5 seconds is when the image processing would "happen" with a hard interrupt when the buttons are pressed.
 
+### Usage
+
+RClone is found at the following URL:
+http://<MomentDeviceIP>:5572
+Username: "gui"
+Password: "moment"
 
 ## References
 

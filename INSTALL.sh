@@ -42,6 +42,8 @@ mkdir -p /home/pi/drive/Garage_Videos
 sudo install -m 644 *.service /etc/systemd/system/ 
 sudo systemctl start rclone-automount
 sudo systemctl enable rclone-automount
+sudo systemctl start rclone-webui
+sudo systemctl enable rclone-webui
 
 # Fix the udev rules
 echo "[DEBUG]:Fix the udev rules:"

@@ -18,8 +18,9 @@ from http.server import HTTPServer, SimpleHTTPRequestHandler
 # [TODO]: Add an interrupt button(PiSugar) to refocus
 # [TODO]: Add an interrupt button(PiSugar) to toggle the main menu dislay
 # [TODO]: After Webserver Change, restart the recording
-# [TODO]: Create the Custom Enclosure
 # [TODO]: Battery Percentage on Main Menu
+# [TODO]: Create the Custom Enclosure
+
 #
 # The following command gets the video preview working as well as orients it correctly and sets the resolution to 1080 HD
 # libcamera-vid -t 0 --qt-preview --hflip --vflip --autofocus --keypress -o <FILENAME>.h264  width 1920 --height 1080 & sleep 2 && xdotool key alt+F11
@@ -34,7 +35,7 @@ from http.server import HTTPServer, SimpleHTTPRequestHandler
 HOST_NAME = "0.0.0.0"
 PORT = 8080
 MOMENT_CONFIG_FILE = '/home/pi/.config/Moment/moment.config'
-IP_ADDR = ""
+global IP_ADDR
 
 # Default Config File
 default_config = {
@@ -114,6 +115,7 @@ class PythonServer(SimpleHTTPRequestHandler):
     """Python HTTP Server that handles GET and POST requests"""
 
     def do_GET(self):
+        global IP_ADDR
         if self.path == '/':
             moment_config = read_file(MOMENT_CONFIG_FILE)
             print("moment_config : ", moment_config)
@@ -331,6 +333,7 @@ class Moment(threading.Thread):
         print("[DEBUG]:Finish Adding Event Detects")
 
     def initialize_main_menu(self):
+        global IP_ADDR
         # Pull all the Network Information
         gw = popen("ip -4 route show default").read().split()
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

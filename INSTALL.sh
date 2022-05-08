@@ -108,8 +108,6 @@ sudo install -m 644 *.desktop /home/pi/.config/autostart/
 sudo cp Moment.desktop ~/Desktop/
 sudo sed -i -e '$i \start_x=1\ngpu_mem=128\n' /boot/config.txt
 
-# Overclock the Raspberry Pi Zero 2 W
-sudo sed -i -e '$i \#Overclock 1200\narm_freq=1200\n' /boot/config.txt
 
 # Reboot
 echo "[SUCCESS]: Installation Finished, Rebooting Now..."

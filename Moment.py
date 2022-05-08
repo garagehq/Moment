@@ -401,7 +401,7 @@ class Moment(threading.Thread):
             server.serve_forever()
         except KeyboardInterrupt:
             server.server_close()
-            print("Server stopped successfully")
+            print("[DEBUG]:Server stopped successfully")
             sys.exit(0)
 
     def start_recording(self):
@@ -892,4 +892,15 @@ class Moment(threading.Thread):
 
 if __name__ == '__main__':
     MomentApp = Moment()
-    MomentApp.run()
+    try:
+        MomentApp.run()
+    except KeyboardInterrupt:
+        print("[DEBUG]:CTRL+C Pressed (Keyboard Interrupt)")
+        GPIO.cleanup()
+        print("[DEBUG]:GPIO cleaned up")
+        # Close any lingering instance of libcamera-vid
+        Popen(['pkill', 'libcamera-vid']).wait()
+        # Close any lingering instance of arecord
+        Popen(['pkill', 'arecord']).wait()
+        print("[DEBUG]:Closed libcamera-vid and arecord")
+        sys.exit(0)

@@ -58,12 +58,6 @@ sudo cp 99-usb-autorun.rules /etc/udev/rules.d/
 sudo install -m 777 *.sh /usr/local/bin
 sudo udevadm control --reload && udevadm trigger
 
-#  Install Raspberry-Wifi-Config
-echo "[DEBUG]:Install Raspberry-Wifi-Config:"
-cd /home/pi
-git clone https://github.com/NickEngmann/raspberry-wifi-conf.git
-cd raspberry-wifi-conf
-
 # Install npm and node as well as Raspberry-Wifi-Config dependencies
 echo "[DEBUG]:Install npm and node as well as Raspberry-Wifi-Config dependencies:"
 curl -sL https://deb.nodesource.com/setup_14.x | sudo bash -

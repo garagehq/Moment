@@ -36,12 +36,6 @@ echo "[DEBUG]:Install Rclone:"
 curl https://rclone.org/install.sh | sudo bash
 mkdir -p /home/pi/drive/Garage_Videos
 
-# Install rclone-webui-react
-cd ~
-git clone https://github.com/rclone/rclone-webui-react.git
-cd rclone-webui-react/
-npm install
-
 # [TODO!]still need to configure rclone (which could be done via the web-interface?)
 # rclone config
 
@@ -97,6 +91,7 @@ echo  "[DEBUG]:Installing Pip Requirements"
 python3 -m pip install --upgrade pip
 python3 -m pip install -r requirements.txt
 python3 -m pip install --upgrade Pillow
+
 # Install Moment Config
 echo "[DEBUG]:Install Moment Config:"
 sudo mkdir -p /home/pi/.config/Moment

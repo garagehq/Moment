@@ -52,6 +52,12 @@ sudo cp 99-usb-autorun.rules /etc/udev/rules.d/
 sudo install -m 777 *.sh /usr/local/bin
 sudo udevadm control --reload && udevadm trigger
 
+# Install PiSugar2
+echo "[DEBUG]:Install PiSugar2:"
+cd ~
+curl http://cdn.pisugar.com/release/pisugar-power-manager.sh | sudo bash
+# admin password is "moment"
+
 # Install npm and node as well as Raspberry-Wifi-Config dependencies
 echo "[DEBUG]:Install npm and node as well as Raspberry-Wifi-Config dependencies:"
 curl -sL https://deb.nodesource.com/setup_14.x | sudo bash -

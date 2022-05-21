@@ -1,3 +1,0 @@
-# Start USB autorun systemd .service
-ENV{DEVTYPE}=="usb_device", \
-TAG+="systemd", ENV{SYSTEMD_WANTS}="usb_autorun.service"

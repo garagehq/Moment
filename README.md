@@ -15,7 +15,7 @@ https://downloads.raspberrypi.org/raspios_full_armhf/images/raspios_full_armhf-2
 ## Hardware Requirements
 
 1. Raspberry Pi Zero 2
-2. PiJuice Power Bank
+2. PiSugar LiPo Battery
 3. USB OTG Cable
 4. LCD/TFT Raspberry Pi HAT Screen with Buttons
 5. Raspberry Pi Cam2 or ArduCam 16MP + Autofocus

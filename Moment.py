@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 from guizero import App, Text, Window
-from time import sleep
+from time import sleep, time
 import urllib.request
 import datetime
 from os import popen, path
@@ -15,13 +15,19 @@ import json
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 
 ##############################################################################################
-# [TODO]: Add an interrupt button(PiSugar) to refocus
-# [TODO]: Add an interrupt button(PiSugar) to toggle the main menu dislay
+# [TODO]: Add PiSugar URL to Configuration Screen
 # [TODO]: After Webserver Change, restart the recording
-# [TODO]: Battery Percentage on Main Menu
-# [TODO]: Create the Custom Enclosure
+# [TODO]: After Webserver Request, Stop Recording and Process a Moment
 
-#
+# [TODO]: Webhooks for local testing
+# [TODO]: Alexa Integration/Webhook
+# [TODO]: Google Home Integration/Webhook
+
+# [TODO]: Add an interrupt button(PiSugar) to refocus (send an 'f' keypress+<ENTER> to stdin in the recorder_thread)
+# [TODO]: Add an interrupt button(PiSugar) to toggle the main menu dislay
+# [TODO]: Battery Percentage on Main Menu(PiSugar)
+
+
 # The following command gets the video preview working as well as orients it correctly and sets the resolution to 1080 HD
 # libcamera-vid -t 0 --qt-preview --hflip --vflip --autofocus --keypress -o <FILENAME>.h264  width 1920 --height 1080 & sleep 2 && xdotool key alt+F11
 # with keypress enabled, everytime you press "f" and then enter in the stoud, it will refocus the sleep and the xdotool commands are to make sure the video preview is running in fullscreen
@@ -37,6 +43,8 @@ PORT = 8080
 MOMENT_CONFIG_FILE = '/home/pi/.config/Moment/moment.config'
 global IP_ADDR
 
+e = threading.Event()
+
 # Default Config File
 default_config = {
     "audio": 'True',
@@ -51,7 +59,9 @@ default_config = {
     "drive_location": "/home/pi/drive/Garage_Videos/",
     "log_location": "/home/pi/Moment_Save/logs/",
     "log": 'True',
-    "orientation": "portrait"
+    "orientation": "portrait",
+    "restart_after": 16,
+    "perserve_footage": 'False'
 }
 
 # Local Config File
@@ -68,7 +78,9 @@ config = {
     "drive_location": "/home/pi/drive/Garage_Videos/",
     "log_location": "/home/pi/Moment_Save/logs/",
     "log": 'True',
-    "orientation": "portrait"
+    "orientation": "portrait",
+    "restart_after": 16,
+    "perserve_footage": 'False'
 }
         
 # Resolution Dictionary
@@ -120,24 +132,26 @@ class PythonServer(SimpleHTTPRequestHandler):
             moment_config = read_file(MOMENT_CONFIG_FILE)
             print("moment_config : ", moment_config)
             if moment_config['resolution'] == '1080p':
-                resolution_html = '<br><label for="resolution">Resolution:</label> <select id="resolution" name="resolution" size="1"> <option value="1080p" selected>1080p</option> <option value="2.7k">2.7k</option> <option value="4k">4k</option> </select><br>'
+                resolution_html = '<label for="resolution">Resolution:</label> <select id="resolution" name="resolution" size="1"> <option value="1080p" selected>1080p</option> <option value="2.7k">2.7k</option> <option value="4k">4k</option> </select><br>'
             elif moment_config['resolution'] == '2.7k':
-                resolution_html = '<br><label for="resolution">Resolution:</label> <select id="resolution" name="resolution" size="1"> <option value="1080p">1080p</option> <option value="2.7k" selected>2.7k</option> <option value="4k">4k</option> </select><br>'
+                resolution_html = '<label for="resolution">Resolution:</label> <select id="resolution" name="resolution" size="1"> <option value="1080p">1080p</option> <option value="2.7k" selected>2.7k</option> <option value="4k">4k</option> </select><br>'
             elif moment_config['resolution'] == '4k':
-                resolution_html = '<br><label for="resolution">Resolution:</label> <select id="resolution" name="resolution" size="1"> <option value="1080p">1080p</option> <option value="2.7k">2.7k</option> <option value="4k" selected>4k</option> </select><br>'
+                resolution_html = '<label for="resolution">Resolution:</label> <select id="resolution" name="resolution" size="1"> <option value="1080p">1080p</option> <option value="2.7k">2.7k</option> <option value="4k" selected>4k</option> </select><br>'
             if moment_config['orientation'] == 'portrait':
-                orientation_html = '<br><label for="orientation">Video Orientation:</label> <select id="orientation" name="orientation" size="1"> <option value="portrait" selected>Portrait</option> <option value="landscape">Landscape</option> </select><br>'
+                orientation_html = '<label for="orientation">Video Orientation:</label> <select id="orientation" name="orientation" size="1"> <option value="portrait" selected>Portrait</option> <option value="landscape">Landscape</option> </select><br>'
             elif moment_config['orientation'] == 'landscape':
-                orientation_html = '<br><label for="orientation">Video Orientation:</label> <select id="orientation" name="orientation" size="1"> <option value="portrait">Portrait</option> <option value="landscape" selected>Landscape</option> </select><br>'
+                orientation_html = '<label for="orientation">Video Orientation:</label> <select id="orientation" name="orientation" size="1"> <option value="portrait">Portrait</option> <option value="landscape" selected>Landscape</option> </select><br>'
             html_file = '<!DOCTYPE html><html> <body> <h2>Simple Python HTTP Server Form</h2> <form method="POST", enctype="multipart/form-data" action="/success"> <label for="audio">Audio:</label><br><input type="text" name="audio" value="' + \
                 str(moment_config['audio']) + '"><br><label for="video">Video:</label><br><input type="text" name="video" value="' + \
-                str(moment_config['video']) + '"><br><label for="raw_audio">Raw Audio:</label><br><input type="text" name="raw_audio" value="' + \
+                str(moment_config['video']) + '"><br><label for="perserve_footage">Perserve Footage:</label><br><input type="text" name="perserve_footage" value="' + \
+                str(moment_config['perserve_footage']) + '"><br><label for="raw_audio">Raw Audio:</label><br><input type="text" name="raw_audio" value="' + \
                 str(moment_config['raw_audio']) + '"><br><label for="time_segment">Time Segment(seconds to break up video):</label><br><input type="text" name="time_segment" value="' + \
                 str(moment_config['time_segment']) + '"><br><label for="framerate">Framerate:</label><br><input type="text" name="framerate" value="' + \
-                moment_config['framerate'] + '">' + \
+                moment_config['framerate'] + '"><br>' + \
                 resolution_html + orientation_html + '<input type="submit" value="Submit"> </form><div><h2>Links:</h2> <a href="https://drive.google.com/drive/u/0/folders/1nMJ7mOO1B0X4He8TgJxdbnIvUouT5YlB" target="_blank">View Garage Moments</a><br><a href="http://' + \
                 IP_ADDR + ':80">Configure Moment Wifi.</a><br><a href="http://' + \
-                IP_ADDR + ':5572">Configure RClone via WebUI.</a><br><form method="POST", enctype="multipart/form-data" action="/factory-reset"><input type="submit" value="Factory Reset"></form></div></body></html>'
+                IP_ADDR + ':5572">Configure RClone via WebUI.</a><br><a href="http://' + \
+                IP_ADDR + ':8423">Configure PiSugar via WebUI.</a><br><form method="POST", enctype="multipart/form-data" action="/factory-reset"><input type="submit" value="Factory Reset"></form></div></body></html>'
             self.send_response(200, "OK")
             self.end_headers()
             self.wfile.write(bytes(html_file, "utf-8"))
@@ -159,6 +173,7 @@ class PythonServer(SimpleHTTPRequestHandler):
                 resolution = fields.get("resolution")[0]
                 orientation = fields.get("orientation")[0]
                 time_segment = fields.get("time_segment")[0]
+                perserve_footage = fields.get("perserve_footage")[0]
                 moment_config = read_file(MOMENT_CONFIG_FILE)
                 # check to see if booleans is either 'True' or 'False'
                 errorText = ""
@@ -175,6 +190,12 @@ class PythonServer(SimpleHTTPRequestHandler):
                 else:
                     error = True
                     errorText += "<b>Video must be either True or False.</b><br>"
+                if perserve_footage == 'True' or perserve_footage == 'False':
+                    moment_config['perserve_footage'] = perserve_footage
+                    config['perserve_footage'] = perserve_footage
+                else:
+                    error = True
+                    errorText += "<b>Perserve Footage must be either True or False.</b><br>"
                 if raw_audio == 'True' or raw_audio == 'False':
                     moment_config['raw_audio'] = raw_audio
                     config['raw_audio'] = raw_audio
@@ -194,12 +215,12 @@ class PythonServer(SimpleHTTPRequestHandler):
                     error = True
                     errorText += "<b>Video Recording orientation must be either portrait or landscape.</b><br>"
                 # check to see if framerate is a number if not set to 30
-                if framerate.isdigit() and int(framerate) > 20 and int(framerate) < 120:
+                if framerate.isdigit() and int(framerate) > 20 and int(framerate) <= 120:
                     moment_config['framerate'] = str(framerate)
                     config['framerate'] = str(framerate)
                 else:
                     error = True
-                    errorText += "<b>Framerate must be either a number over 20 and below 120.</b><br>"
+                    errorText += "<b>Framerate must be either a number over 20 and below 121.</b><br>"
                 if time_segment.isdigit() and int(time_segment) > 0 and int(time_segment) < 300:
                     moment_config['time_segment'] = int(time_segment)
                     config['time_segment'] = int(time_segment)
@@ -210,7 +231,6 @@ class PythonServer(SimpleHTTPRequestHandler):
                 
                 if error == False:
                     html = f"<html><head></head><body><h1>Moment config successfully recorded Updated. Please Reboot Device in Order to use new config.</h1></body></html>"
-                    # restart the recording process
                     
                 else:
                     html = f"<html><head></head><body><h1>Error, please try again.</h1>" + \
@@ -220,8 +240,11 @@ class PythonServer(SimpleHTTPRequestHandler):
                 self.send_response(200, "OK")
                 self.end_headers()
                 self.wfile.write(bytes(html, "utf-8"))
+                # TODO: Add the restart recording event trigger
+                
         if self.path == '/factory-reset':
             error = False
+            # Reset the current active config
             moment_config = read_file(MOMENT_CONFIG_FILE)
             moment_config['audio'] = default_config['audio']
             moment_config['video'] = default_config['video']
@@ -230,7 +253,10 @@ class PythonServer(SimpleHTTPRequestHandler):
             moment_config['orientation'] = default_config['orientation']
             moment_config['time_segment'] = default_config['time_segment']
             moment_config['framerate'] = default_config['framerate']
+            moment_config['perserve_footage'] = default_config['perserve_footage']
+            moment_config['restart_after'] = default_config['restart_after']
             
+            # Reset the local config
             config['audio'] = default_config['audio']
             config['video'] = default_config['video']
             config['raw_audio'] = default_config['raw_audio']
@@ -238,16 +264,22 @@ class PythonServer(SimpleHTTPRequestHandler):
             config['orientation'] = default_config['orientation']
             config['time_segment'] = default_config['time_segment']
             config['framerate'] = default_config['framerate']
+            config['perserve_footage'] = default_config['perserve_footage']
+            config['restart_after'] = default_config['restart_after']
 
             save_file(MOMENT_CONFIG_FILE, moment_config)
             html = f'<html><head></head><body><h1>Config Reset to Default Settings.</h1><br><div><a href="http://' + IP_ADDR + \
                         ':'+str(PORT)+'">Back</a></div><br></body></html>'
             # restart the recording process with the new config
+            # TODO: Add the restart recording event trigger
             
             self.send_response(200, "OK")
             self.end_headers()
             self.wfile.write(bytes(html, "utf-8"))
-            
+         
+        if self.path == '/save-memory':
+            print("[TODO:]Would have to gather parameters from the request to trigger another event on the moment backend")
+             
 class Moment(threading.Thread):
     def __init__(self):
         super().__init__()
@@ -281,16 +313,27 @@ class Moment(threading.Thread):
                         config["audio"] = moment_config["audio"]
                     else:
                         print("[DEBUG]:Config Audio is not set to True or False")
+                if(moment_config["perserve_footage"] != config["perserve_footage"]):
+                    if moment_config['perserve_footage'] == 'True' or moment_config['perserve_footage'] == 'False':
+                        config["perserve_footage"] = moment_config["perserve_footage"]
+                    else:
+                        print("[DEBUG]:Config perserve_footage is not set to True or False")
                 if(moment_config["raw_audio"] != config["raw_audio"]):
                     if moment_config['raw_audio'] == 'True' or moment_config['raw_audio'] == 'False':
                         config["raw_audio"] = moment_config["raw_audio"]
                     else:
                         print("[DEBUG]:Config Raw Audio is not set to True or False")
                 if(moment_config["framerate"] != config["framerate"]):
-                    if moment_config['framerate'].isdigit() and int(moment_config['framerate']) > 20 and int(moment_config['framerate'] < 120):
+                    if moment_config['framerate'].isdigit() and int(moment_config['framerate']) > 20 and int(moment_config['framerate']) <= 120:
                         config["framerate"] = moment_config["framerate"]
                     else:
-                        print("[DEBUG]:Config Framerate is not set to a number over 20 and below 120")
+                        print("[DEBUG]:Config Framerate is not set to a number over 20 and below 121")
+                if(moment_config["restart_after"] != config["restart_after"]):
+                    if moment_config['restart_after'].isdigit() and int(moment_config['restart_after']) >= 0 and int(moment_config['restart_after']) <= 72:
+                        config["restart_after"] = moment_config["restart_after"]
+                    else:
+                        print(
+                            "[DEBUG]:Config restart_after is not set to a number >= 0 and below 72")
                 if(moment_config["resolution"] != config["resolution"]):
                     if moment_config["resolution"] == '1080p' or moment_config["resolution"] == '2.7k' or moment_config["resolution"] == '4k':
                         config["resolution"] = moment_config["resolution"]
@@ -318,6 +361,41 @@ class Moment(threading.Thread):
         # Set up the GPIO pins
         self.gpio_setup()
 
+
+    # After a webserver change, make sure to stop the recording and restart it
+    def webserver_change(self):
+        print("[DEBUG]: Temporarily Disable GPIO Interrupts")
+        GPIO.remove_event_detect(23)
+        GPIO.remove_event_detect(24)
+
+        if self.recording == True:
+            print("[DEBUG]:Recording stops in order to Restart the Recording with the new Configuration Values")
+            self.kill_recording()
+            self.recording = False
+            
+        self.info_window = Window(self.app, bg="black", height=480,
+                                    width=480, layout="grid", title="Info Window")
+        self.info_window.tk.attributes("-fullscreen", True)
+        Text(self.info_window, color="white", grid=[
+            0, 0], text="  [INFO]", size=40)
+        Text(self.info_window, color="white", grid=[
+            0, 1], text="  Webserver Change Detected, restarting recording", size=28)
+        Text(self.info_window, color="white", grid=[
+            0, 2], text="  [Please wait]", size=28)
+
+        self.info_window.show()
+        sleep(3)
+
+        print("[DEBUG]: Starting Recording using thread")
+        recorder_thread = threading.Thread(target=self.start_recording)
+        self.info_window.hide()
+        recorder_thread.start()
+        sleep(2)
+        print("[DEBUG]:Reset GPIO Interrupts")
+        GPIO.cleanup()
+        gpio_thread = threading.Thread(target=self.gpio_setup)
+        gpio_thread.start()
+        
     def gpio_setup(self):
         print("[DEBUG]:Add Event Detects")
         GPIO.setmode(GPIO.BCM)     # set up BCM GPIO numbering
@@ -372,21 +450,22 @@ class Moment(threading.Thread):
 
         Text(self.app, color="white", grid=[
             0, 7], text="\n  Press (-) to Upload\n   Press (+) to Save Rec.", size=26)
-
-        Text(self.app, color="white", grid=[
-            0, 8], text="        (-)             (+)", size=35)
         
     def run(self):
         # Configure the Directory for the moments and clear out past unsaved moments
-        Popen("rm -rf " + config["recording_location"] + "*", shell=True).wait()
-        Popen(["mkdir",'-p', config["recording_location"]]).wait()
-        Popen("rm -rf " + config["full_raw_save_location"] + "*", shell=True).wait()
+        Popen(["mkdir", '-p', config["recording_location"]]).wait()
         Popen(["mkdir", '-p', config["full_raw_save_location"]]).wait()
         Popen(["mkdir", '-p', config["moment_save_location"]]).wait()
-
+        
+        if(config["perserve_footage"] == "False"):
+            Popen("rm -rf " + config["recording_location"] + "*", shell=True).wait()
+            Popen("rm -rf " + config["full_raw_save_location"] + "*", shell=True).wait()
+        
         self.initialize_main_menu()
         
         recorder_thread = threading.Thread(target=self.start_recording)
+        # recorder_thread = threading.Thread(
+        #     target=self.start_recording, args=(e,))
         recorder_thread.start()
         server_thread = threading.Thread(target=self.start_server)
         server_thread.start()
@@ -404,6 +483,7 @@ class Moment(threading.Thread):
             print("[DEBUG]:Server stopped successfully")
             sys.exit(0)
 
+    # def start_recording(self, e):
     def start_recording(self):
         if self.recording == False:
             self.recording = True
@@ -444,12 +524,12 @@ class Moment(threading.Thread):
                     config["video"] = 'False'
                 else:
                     if config['orientation'] == 'portrait':
-                        start_video_command = "libcamera-vid -t 0 --framerate " + config["framerate"] + " --qt-preview --hflip --vflip --autofocus -o " + config["recording_location"] + \
+                        start_video_command = "libcamera-vid -t 0 --framerate " + config["framerate"] + " --qt-preview --hflip --vflip --autofocus --keypress -o " + config["recording_location"] + \
                             str(self.filename) + ".h264 --width " + \
                             resolution[config["resolution"]]["height"] + \
                             " --height "+ resolution[config["resolution"]]["width"]
                     elif config['orientation'] == 'landscape':
-                        start_video_command = "libcamera-vid -t 0 --framerate " + config["framerate"] + " --qt-preview --autofocus -o " + config["recording_location"] + \
+                        start_video_command = "libcamera-vid -t 0 --framerate " + config["framerate"] + " --qt-preview --autofocus --keypress -o " + config["recording_location"] + \
                             str(self.filename) + ".h264 --width " + \
                             resolution[config["resolution"]]["width"] + \
                             " --height " + \
@@ -458,15 +538,42 @@ class Moment(threading.Thread):
                     Popen(
                         start_video_command,
                         shell=True)
+                    # [TODO]: Keep Track of the stdin, so you can inject keypresses whenever you need too 
                     sleep(5)
                     Popen(['xdotool', 'key', 'alt+F11'])
             if config["video"] == 'False' and config["audio"] == 'False':
                 print("[DEBUG]: No Moment Recording In Progress, Please Check Hardware")
                 Text(self.app, color="red", grid=[
                     0, 7], text="\n  ERROR: Check Recording Hardware\n Or Config", size=22)
+            else:
+                if int(config["restart_after"]) != 0:
+                    print("[DEBUG]:Enabling Restart After " +
+                        str(config["restart_after"]) + " hours.")
+                    self.next_t = time()
+                    self.i = 0
+                    self.increment = 3600
+                    self._restart_after_timer()
         else:
             print("[DEBUG]:Recording already in progress")
-
+        
+            
+    def _restart_after_timer(self):
+        self.next_t+= self.increment
+        self.i+=3600
+        if self.i < (int(config["restart_after"]) * 3600):
+            self.restart_after = threading.Timer(
+                self.next_t - time(), self._restart_after_timer)
+            self.restart_after.start()
+        else:
+            if self.recording == True:
+                print("[DEBUG]:Recording stops due to timer interrupt")
+                self.kill_recording()
+                self.recording = False
+                sleep(4)
+            recorder_thread = threading.Thread(target=self.start_recording)
+            recorder_thread.start()
+            print("[DEBUG]:Restarting Recording")
+            
     # Generate timestamp string generating name for photos
     def timestamp(self):
         tstring = datetime.datetime.now()
@@ -515,8 +622,9 @@ class Moment(threading.Thread):
                         self.recording = False
                         sleep(4)
                         print("[DEBUG]: Restarting Recording")
-                        t = threading.Thread(target=self.start_recording)
-                        t.start()
+                        recorder_thread = threading.Thread(
+                            target=self.start_recording)
+                        recorder_thread.start()
                         sleep(2)
         
                     return
@@ -576,8 +684,8 @@ class Moment(threading.Thread):
                 self.upload_window.hide()
                 # At the end, Restart Recording
                 print("[DEBUG]: Restarting Recording")
-                t = threading.Thread(target=self.start_recording)
-                t.start()
+                recorder_thread = threading.Thread(target=self.start_recording)
+                recorder_thread.start()
                 sleep(2)
 
                 return
@@ -605,8 +713,8 @@ class Moment(threading.Thread):
 
         print("[DEBUG]:Reset GPIO Interrupts")
         GPIO.cleanup()
-        t = threading.Thread(target=self.gpio_setup)
-        t.start()
+        gpio_thread = threading.Thread(target=self.gpio_setup)
+        gpio_thread.start()
 
     def kill_recording(self):
         print("[DEBUG]:Killing Recording...")
@@ -616,6 +724,11 @@ class Moment(threading.Thread):
         if config["audio"] == 'True':
             print("[DEBUG]:Killing Audio...")
             Popen(['pkill', 'arecord']).wait()
+        if int(config["restart_after"]) != 0:
+            # check to see if restart_after timer is active
+            if(self.restart_after.is_alive()):
+                print("[DEBUG]:Killing Restart After Timer...")
+                self.restart_after.cancel()
         return
 
     # Button Logic If GPIO 23 is pressed, then increase the time counter and if GPIO 24 is pressed, then decrease the time counter but if they both are pressed, then process the Recording
@@ -834,8 +947,8 @@ class Moment(threading.Thread):
                 self.process_window.hide()
                 # At the end, Restart Recording
                 print("[DEBUG]:Restarting Recording")
-                t = threading.Thread(target=self.start_recording)
-                t.start()
+                recorder_thread = threading.Thread(target=self.start_recording)
+                recorder_thread.start()
                 sleep(2)
 
                 return
@@ -882,8 +995,8 @@ class Moment(threading.Thread):
 
         print("[DEBUG]:Reset GPIO Interrupts")
         GPIO.cleanup()
-        t = threading.Thread(target=self.gpio_setup)
-        t.start()
+        gpio_thread = threading.Thread(target=self.gpio_setup)
+        gpio_thread.start()
         
     def config_menu(self):
         print("[DEBUG]:Opening Config Menu")

@@ -15,9 +15,11 @@ import json
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 
 ##############################################################################################
+
 # [TODO]: Add PiSugar URL to Configuration Screen
 # [TODO]: After Webserver Change, restart the recording
 # [TODO]: After Webserver Request, Stop Recording and Process a Moment
+# [TODO]: Change the Background on the Moment Device to the Garage's Logo
 
 # [TODO]: Webhooks for local testing
 # [TODO]: Alexa Integration/Webhook
@@ -524,7 +526,7 @@ class Moment(threading.Thread):
                     config["video"] = 'False'
                 else:
                     if config['orientation'] == 'portrait':
-                        start_video_command = "libcamera-vid -t 0 --framerate " + config["framerate"] + " --qt-preview --hflip --vflip --autofocus --keypress -o " + config["recording_location"] + \
+                        self.start_video_command = "libcamera-vid -t 0 --framerate " + config["framerate"] + " --qt-preview --hflip --vflip --autofocus --keypress -o " + config["recording_location"] + \
                             str(self.filename) + ".h264 --width " + \
                             resolution[config["resolution"]]["height"] + \
                             " --height "+ resolution[config["resolution"]]["width"]
@@ -535,10 +537,12 @@ class Moment(threading.Thread):
                             " --height " + \
                             resolution[config["resolution"]]["height"]
                     print("[DEBUG]:Start Recording Command: " + start_video_command)
-                    Popen(
+                    self.video_command = Popen(
                         start_video_command,
-                        shell=True)
-                    # [TODO]: Keep Track of the stdin, so you can inject keypresses whenever you need too 
+                        shell=True,
+                        stdout=PIPE,
+                        stdin=PIPE,
+                        stderr=PIPE)
                     sleep(5)
                     Popen(['xdotool', 'key', 'alt+F11'])
             if config["video"] == 'False' and config["audio"] == 'False':

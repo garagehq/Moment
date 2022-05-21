@@ -5,11 +5,12 @@ All notable changes to LoRa KeyFob keystroke injector/reciever will be documente
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [0.0.2] - 2022-05-15
+## [0.0.3] - 2022-05-21
 
 ### Added
 - Restart After X Hours
 - Perserve Footage Flag
+- Keypress infrastructure
 
 ## [0.0.1] - 2022-05-15
 

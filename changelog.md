@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Restart After X Hours
 - Perserve Footage Flag
 - Keypress infrastructure
+- Fixed Installation Instructions for raspberry-wifi-conf
+- Battery % on Home Screen and Configuration Page
 
 ## [0.0.1] - 2022-05-15
 

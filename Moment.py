@@ -15,10 +15,9 @@ import json
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 
 ##############################################################################################
-
-# [TODO]: Add PiSugar URL to Configuration Screen
 # [TODO]: After Webserver Change, restart the recording
 # [TODO]: After Webserver Request, Stop Recording and Process a Moment
+
 # [TODO]: Change the Background on the Moment Device to the Garage's Logo
 
 # [TODO]: Webhooks for local testing
@@ -27,18 +26,7 @@ from http.server import HTTPServer, SimpleHTTPRequestHandler
 
 # [TODO]: Add an interrupt button(PiSugar) to refocus (send an 'f' keypress+<ENTER> to stdin in the recorder_thread)
 # [TODO]: Add an interrupt button(PiSugar) to toggle the main menu dislay
-# [TODO]: Battery Percentage on Main Menu(PiSugar)
-
-
-# The following command gets the video preview working as well as orients it correctly and sets the resolution to 1080 HD
-# libcamera-vid -t 0 --qt-preview --hflip --vflip --autofocus --keypress -o <FILENAME>.h264  width 1920 --height 1080 & sleep 2 && xdotool key alt+F11
-# with keypress enabled, everytime you press "f" and then enter in the stoud, it will refocus the sleep and the xdotool commands are to make sure the video preview is running in fullscreen
-
-# PROCESS VIDEO COMMAND
-# ffmpeg -framerate 30 -i <FILE TO CHANGE> -c copy <FILE TO CHANGE>.mp4
-
-# CUTTING COMMAND
-# ffmpeg -v debug -sseof -6 -i 000.mp4 000-1.mp4
+# [TODO]: Debug why PiSugar Webpage/Server isn't showing up
 
 HOST_NAME = "0.0.0.0"
 PORT = 8080
@@ -124,7 +112,13 @@ def save_file(path, data):
         data = e
     return data
 
-
+def get_battery():
+    battery = popen('echo "get battery" | nc 127.0.0.1 8423 -q 1').read()
+    if(battery):
+        return battery.capitalize().strip("\n") + "%"
+    else:
+        return ""
+    
 class PythonServer(SimpleHTTPRequestHandler):
     """Python HTTP Server that handles GET and POST requests"""
 
@@ -133,6 +127,12 @@ class PythonServer(SimpleHTTPRequestHandler):
         if self.path == '/':
             moment_config = read_file(MOMENT_CONFIG_FILE)
             print("moment_config : ", moment_config)
+            battery = get_battery()
+            battery_html = ""
+            
+            if(battery):
+                battery_html = "<h4>" + battery +"</h24> "
+                
             if moment_config['resolution'] == '1080p':
                 resolution_html = '<label for="resolution">Resolution:</label> <select id="resolution" name="resolution" size="1"> <option value="1080p" selected>1080p</option> <option value="2.7k">2.7k</option> <option value="4k">4k</option> </select><br>'
             elif moment_config['resolution'] == '2.7k':
@@ -143,7 +143,7 @@ class PythonServer(SimpleHTTPRequestHandler):
                 orientation_html = '<label for="orientation">Video Orientation:</label> <select id="orientation" name="orientation" size="1"> <option value="portrait" selected>Portrait</option> <option value="landscape">Landscape</option> </select><br>'
             elif moment_config['orientation'] == 'landscape':
                 orientation_html = '<label for="orientation">Video Orientation:</label> <select id="orientation" name="orientation" size="1"> <option value="portrait">Portrait</option> <option value="landscape" selected>Landscape</option> </select><br>'
-            html_file = '<!DOCTYPE html><html> <body> <h2>Simple Python HTTP Server Form</h2> <form method="POST", enctype="multipart/form-data" action="/success"> <label for="audio">Audio:</label><br><input type="text" name="audio" value="' + \
+            html_file = '<!DOCTYPE html><html> <body> <h2>Moment Configuration</h2> <form method="POST", enctype="multipart/form-data" action="/success"> <label for="audio">Audio:</label><br><input type="text" name="audio" value="' + \
                 str(moment_config['audio']) + '"><br><label for="video">Video:</label><br><input type="text" name="video" value="' + \
                 str(moment_config['video']) + '"><br><label for="perserve_footage">Perserve Footage:</label><br><input type="text" name="perserve_footage" value="' + \
                 str(moment_config['perserve_footage']) + '"><br><label for="raw_audio">Raw Audio:</label><br><input type="text" name="raw_audio" value="' + \
@@ -151,9 +151,10 @@ class PythonServer(SimpleHTTPRequestHandler):
                 str(moment_config['time_segment']) + '"><br><label for="framerate">Framerate:</label><br><input type="text" name="framerate" value="' + \
                 moment_config['framerate'] + '"><br>' + \
                 resolution_html + orientation_html + '<input type="submit" value="Submit"> </form><div><h2>Links:</h2> <a href="https://drive.google.com/drive/u/0/folders/1nMJ7mOO1B0X4He8TgJxdbnIvUouT5YlB" target="_blank">View Garage Moments</a><br><a href="http://' + \
-                IP_ADDR + ':80">Configure Moment Wifi.</a><br><a href="http://' + \
-                IP_ADDR + ':5572">Configure RClone via WebUI.</a><br><a href="http://' + \
-                IP_ADDR + ':8423">Configure PiSugar via WebUI.</a><br><form method="POST", enctype="multipart/form-data" action="/factory-reset"><input type="submit" value="Factory Reset"></form></div></body></html>'
+                IP_ADDR + ':80" target="_blank">Configure Moment Wifi.</a><br><a href="http://' + \
+                IP_ADDR + ':5572" target="_blank">Configure RClone via WebUI.</a><br><a href="http://' + \
+                IP_ADDR + ':8423" target="_blank">Configure PiSugar via WebUI.</a><br><form method="POST", enctype="multipart/form-data" action="/factory-reset"><input type="submit" value="Factory Reset"></form></div>' + \
+                    battery_html + '</body></html>'
             self.send_response(200, "OK")
             self.end_headers()
             self.wfile.write(bytes(html_file, "utf-8"))
@@ -428,7 +429,7 @@ class Moment(threading.Thread):
             self.gateway = "192.168.1.1"
             self.ssid = "Mobile-AP"
             self.host = socket.gethostname()
-                  
+                
         Text(self.app, color="white", grid=[
             0, 0], text="   Network Information", size=34)
 
@@ -451,7 +452,10 @@ class Moment(threading.Thread):
             0, 6], text="http://" + IP_ADDR + ":" + str(PORT), size=26)
 
         Text(self.app, color="white", grid=[
-            0, 7], text="\n  Press (-) to Upload\n   Press (+) to Save Rec.", size=26)
+                0, 7], text=get_battery(), size=26)
+        
+        Text(self.app, color="white", grid=[
+            0, 8], text="\n  Press (-) to Upload\n   Press (+) to Save Rec.", size=26)
         
     def run(self):
         # Configure the Directory for the moments and clear out past unsaved moments

@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Keypress infrastructure
 - Fixed Installation Instructions for raspberry-wifi-conf
 - Battery % on Home Screen and Configuration Page
+- Webserver changes retrigger the recording
 
 ## [0.0.1] - 2022-05-15
 

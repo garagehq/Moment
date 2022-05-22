@@ -15,18 +15,14 @@ import json
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 
 ##############################################################################################
-# [TODO]: After Webserver Change, restart the recording
-# [TODO]: After Webserver Request, Stop Recording and Process a Moment
-
-# [TODO]: Change the Background on the Moment Device to the Garage's Logo
-
 # [TODO]: Webhooks for local testing
-# [TODO]: Alexa Integration/Webhook
-# [TODO]: Google Home Integration/Webhook
+# [TODO]: Alexa Integration
+# [TODO]: Google Home Integration
 
 # [TODO]: Add an interrupt button(PiSugar) to refocus (send an 'f' keypress+<ENTER> to stdin in the recorder_thread)
 # [TODO]: Add an interrupt button(PiSugar) to toggle the main menu dislay
 # [TODO]: Debug why PiSugar Webpage/Server isn't showing up
+# [TODO]: Change the Background on the Moment Device to the Garage's Logo
 
 HOST_NAME = "0.0.0.0"
 PORT = 8080
@@ -233,8 +229,8 @@ class PythonServer(SimpleHTTPRequestHandler):
                 save_file(MOMENT_CONFIG_FILE, moment_config)
                 
                 if error == False:
-                    html = f"<html><head></head><body><h1>Moment config successfully recorded Updated. Please Reboot Device in Order to use new config.</h1></body></html>"
-                    
+                    html = f"<html><head></head><body><h1>Moment config successfully recorded Updated. Please wait while the device resets</h1></body></html>"
+                    MomentApp.webserver_change()
                 else:
                     html = f"<html><head></head><body><h1>Error, please try again.</h1>" + \
                         errorText + '<br><div><a href="http://' + IP_ADDR + \
@@ -245,7 +241,7 @@ class PythonServer(SimpleHTTPRequestHandler):
                 self.wfile.write(bytes(html, "utf-8"))
                 # TODO: Add the restart recording event trigger
                 
-        if self.path == '/factory-reset':
+        elif self.path == '/factory-reset':
             error = False
             # Reset the current active config
             moment_config = read_file(MOMENT_CONFIG_FILE)
@@ -275,12 +271,14 @@ class PythonServer(SimpleHTTPRequestHandler):
                         ':'+str(PORT)+'">Back</a></div><br></body></html>'
             # restart the recording process with the new config
             # TODO: Add the restart recording event trigger
+            MomentApp.webserver_change()
             
             self.send_response(200, "OK")
             self.end_headers()
             self.wfile.write(bytes(html, "utf-8"))
          
-        if self.path == '/save-memory':
+        elif self.path == '/save-memory':
+            MomentApp.process_moment_button_logic(1,True)
             print("[TODO:]Would have to gather parameters from the request to trigger another event on the moment backend")
              
 class Moment(threading.Thread):
@@ -380,11 +378,11 @@ class Moment(threading.Thread):
                                     width=480, layout="grid", title="Info Window")
         self.info_window.tk.attributes("-fullscreen", True)
         Text(self.info_window, color="white", grid=[
-            0, 0], text="  [INFO]", size=40)
+            0, 0], text="  [INFO]", size=34)
         Text(self.info_window, color="white", grid=[
-            0, 1], text="  Webserver Change Detected, restarting recording", size=28)
+            0, 1], text="  Webserver Change Detected\n ...Restarting Recording", size=22)
         Text(self.info_window, color="white", grid=[
-            0, 2], text="  [Please wait]", size=28)
+            0, 2], text="  [Please wait]", size=22)
 
         self.info_window.show()
         sleep(3)
@@ -470,8 +468,6 @@ class Moment(threading.Thread):
         self.initialize_main_menu()
         
         recorder_thread = threading.Thread(target=self.start_recording)
-        # recorder_thread = threading.Thread(
-        #     target=self.start_recording, args=(e,))
         recorder_thread.start()
         server_thread = threading.Thread(target=self.start_server)
         server_thread.start()
@@ -740,57 +736,72 @@ class Moment(threading.Thread):
         return
 
     # Button Logic If GPIO 23 is pressed, then increase the time counter and if GPIO 24 is pressed, then decrease the time counter but if they both are pressed, then process the Recording
-    def process_moment_button_logic(self):
-        processFlag = False
+    def process_moment_button_logic(self, time_counter=0, processFlag=False):
         changed = False
         return_hold = 0
-        while True:
-            if GPIO.input(23) == GPIO.LOW and GPIO.input(24) == GPIO.LOW:
-                # Process
-                processFlag = True
-                sleep(0.2)
-                print("[DEBUG]:Begin Processing Recording using ffmpeg")
-            elif GPIO.input(24) == GPIO.LOW:
-                return_hold = 0
-                # get end time
-                end_time = datetime.datetime.now()
-                # Calculate the difference between the start and end time in minutes
-                diff = end_time - self.start_time
-                diff_segment = diff.seconds / config["time_segment"]
-                print("[DEBUG]:Full Recording Duration: " +
-                      str(diff_segment) + " minutes")
-                # If the difference is greater than the threshold, then process the video
-                if diff_segment > self.time_counter:
-                    self.time_counter += 1
-                    changed = True
-                    sleep(0.2)
-                    print("[DEBUG]: Time Counter = " + str(self.time_counter))
-            elif GPIO.input(23) == 0:
-                if self.time_counter != 0:
-                    self.time_counter -= 1
-                    changed = True
-                    return_hold = 0
-                    sleep(0.2)
-                    print("[DEBUG]: Time Counter = " + str(self.time_counter))
-                else:
-                    return_hold += 1
-                    print("[DEBUG]:Return Hold Counter = ", return_hold)
-                    sleep(0.5)
-                    if return_hold > 4:
-                        print("[DEBUG]:Returning Back to the Main Menu due to Press and Hold")
-                        processFlag = True
-                        return_hold = 0
-            
-            sleep(0.3)
-            
-            if changed == True:
-                Text(self.process_window, color="white", grid=[
-                        0, 1], text=str(self.time_counter) + " mins", size=29)
-                self.process_window.update()
-                changed = False
+        
+        self.process_window = Window(self.app, bg="black", height=480,
+                              width=480, layout="grid", title="Process Moment")
+        self.process_window.tk.attributes("-fullscreen", True)
 
-            if processFlag == True:
-                if self.time_counter == 0:
+        Text(self.process_window, color="white", grid=[
+            0, 0], text="Process Moment", size=38)
+        Text(self.process_window, color="white", grid=[
+            0, 1], text=str(time_counter) + " mins", size=29)
+        Text(self.process_window, color="white", grid=[
+            0, 2], text="[Press Both Buttons to Confirm]", size=24)
+        
+        self.process_window.show()
+        
+        sleep(1)
+        while True:
+            if processFlag == False:
+                if GPIO.input(23) == GPIO.LOW and GPIO.input(24) == GPIO.LOW:
+                    # Process
+                    processFlag = True
+                    sleep(0.2)
+                    print("[DEBUG]:Begin Processing Recording using ffmpeg")
+                elif GPIO.input(24) == GPIO.LOW:
+                    return_hold = 0
+                    # get end time
+                    end_time = datetime.datetime.now()
+                    # Calculate the difference between the start and end time in minutes
+                    diff = end_time - self.start_time
+                    diff_segment = diff.seconds / config["time_segment"]
+                    print("[DEBUG]:Full Recording Duration: " +
+                        str(diff_segment) + " minutes")
+                    # If the difference is greater than the threshold, then process the video
+                    if diff_segment > time_counter:
+                        time_counter += 1
+                        changed = True
+                        sleep(0.2)
+                        print("[DEBUG]: Time Counter = " + str(time_counter))
+                elif GPIO.input(23) == 0:
+                    if time_counter != 0:
+                        time_counter -= 1
+                        changed = True
+                        return_hold = 0
+                        sleep(0.2)
+                        print("[DEBUG]: Time Counter = " + str(time_counter))
+                    else:
+                        return_hold += 1
+                        print("[DEBUG]:Return Hold Counter = ", return_hold)
+                        sleep(0.5)
+                        if return_hold > 4:
+                            print("[DEBUG]:Returning Back to the Main Menu due to Press and Hold")
+                            processFlag = True
+                            return_hold = 0
+            
+                sleep(0.3)
+            
+                if changed == True:
+                    Text(self.process_window, color="white", grid=[
+                            0, 1], text=str(time_counter) + " mins", size=29)
+                    self.process_window.update()
+                    changed = False
+
+            elif processFlag == True:
+                if time_counter == 0:
                     print("[DEBUG]:Returning to Main Menu")
                     Text(self.process_window, color="white", grid=[
                         0, 3], text="Returning to Main Menu", size=29)
@@ -814,12 +825,12 @@ class Moment(threading.Thread):
                 if config["audio"] == 'True' and config["video"] == 'False':
                     print("[DEBUG]:Processing Audio Only")
                     print("[DEBUG]:Cutting the .wav using ffmpeg while transcoding to .mp3")
-                    cutting_audio = "ffmpeg -v debug -sseof -" + str(self.time_counter * config["time_segment"]) + " -i " + str(config["recording_location"]) + str(
+                    cutting_audio = "ffmpeg -v debug -sseof -" + str(time_counter * config["time_segment"]) + " -i " + str(config["recording_location"]) + str(
                         self.filename) + ".wav -vn -ar 44100 -ac 2 -b:a 192k" + str(config["moment_save_location"]) + str(self.filename) + ".mp3"
                     print("[DEBUG] Cutting .wav while transcoding to .mp3 Command: " +
                           cutting_audio)
                     split_audio = Popen(
-                        ['ffmpeg', '-v', 'debug', '-sseof', '-'+str(self.time_counter * config["time_segment"]), '-i', str(config["recording_location"]) + str(
+                        ['ffmpeg', '-v', 'debug', '-sseof', '-'+str(time_counter * config["time_segment"]), '-i', str(config["recording_location"]) + str(
                             self.filename) + '.wav', '-vn', '-ar', '44100', '-ac', '2', '-b:a', '192k', str(config["moment_save_location"]) + str(self.filename) + '.mp3'])
                     split_audio.wait()
                     print("[DEBUG]:Audio Moment Processed and move to " +
@@ -927,12 +938,12 @@ class Moment(threading.Thread):
                         sleep(1)
 
                     print("[DEBUG]:Cutting the Proccessed .mp4 Video using ffmpeg")
-                    cutting_processed_video = "ffmpeg -v debug -sseof -" + str(self.time_counter * config["time_segment"]) + " -i " + str(config["full_raw_save_location"]) + str(
+                    cutting_processed_video = "ffmpeg -v debug -sseof -" + str(time_counter * config["time_segment"]) + " -i " + str(config["full_raw_save_location"]) + str(
                         self.filename) + ".mp4 -c copy" + str(config["moment_save_location"]) + str(self.filename) + ".mp4"
                     print("[DEBUG] Cutting Processed Video Command: " +
                         cutting_processed_video)
                     splitMp4 = Popen(
-                        ['ffmpeg', '-v', 'debug', '-sseof', '-'+str(self.time_counter * config["time_segment"]), '-i', str(config["full_raw_save_location"]) + str(
+                        ['ffmpeg', '-v', 'debug', '-sseof', '-'+str(time_counter * config["time_segment"]), '-i', str(config["full_raw_save_location"]) + str(
                             self.filename) + '.mp4', "-c", "copy", str(config["moment_save_location"]) + str(self.filename) + '.mp4'])
                     splitMp4.wait()
 
@@ -975,31 +986,16 @@ class Moment(threading.Thread):
               str(diff_segment) + " time_segment")
         # If the difference is greater than the threshold, then process the Moment differently
         if diff_segment > 20:
-            self.time_counter = 5
+            time_counter = 5
             print("[DEBUG]:Very Long Moment, Defaulting Time Counter to 5")
         elif diff_segment > 5:
-            self.time_counter = 3
+            time_counter = 3
             print("[DEBUG]:Long Moment, Defaulting Time Counter to 3")
         else:
             print("[DEBUG]:Short Moment, Defaulting Time Counter to 1")
-            self.time_counter = 1
+            time_counter = 1
 
-        self.process_window = Window(self.app, bg="black", height=480,
-                              width=480, layout="grid", title="Process Moment")
-        self.process_window.tk.attributes("-fullscreen", True)
-
-        Text(self.process_window, color="white", grid=[
-            0, 0], text="Process Moment", size=38)
-        Text(self.process_window, color="white", grid=[
-            0, 1], text=str(self.time_counter) + " mins", size=29)
-        Text(self.process_window, color="white", grid=[
-            0, 2], text="[Press Both Buttons to Confirm]", size=24)
-        
-        self.process_window.show()
-        
-        sleep(1)
-
-        self.process_moment_button_logic()
+        self.process_moment_button_logic(time_counter)
 
         print("[DEBUG]:Reset GPIO Interrupts")
         GPIO.cleanup()

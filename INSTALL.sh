@@ -69,6 +69,9 @@ sudo npm run-script provision
 sudo npm start
 
 # Set up Raspberry-Wifi-Config app as a service
+cd ~
+git clone https://github.com/NickEngmann/raspberry-wifi-conf.git
+cd raspberry-wifi-conf
 echo "[DEBUG]:Set up Raspberry-Wifi-Config app as a service:"
 sudo cp assets/init.d/raspberry-wifi-conf /etc/init.d/raspberry-wifi-conf 
 sudo chmod +x /etc/init.d/raspberry-wifi-conf  
@@ -109,6 +112,9 @@ sudo install -m 644 *.desktop /home/pi/.config/autostart/
 sudo cp Moment.desktop ~/Desktop/
 sudo sed -i -e '$i \start_x=1\ngpu_mem=128\n' /boot/config.txt
 
+
+# Change the background image
+DISPLAY=:0 pcmanfm --set-wallpaper background.jpg
 
 # Reboot
 echo "[SUCCESS]: Installation Finished, Rebooting Now..."

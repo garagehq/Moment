@@ -22,7 +22,6 @@ from http.server import HTTPServer, SimpleHTTPRequestHandler
 # [TODO]: Add an interrupt button(PiSugar) to refocus (send an 'f' keypress+<ENTER> to stdin in the recorder_thread)
 # [TODO]: Add an interrupt button(PiSugar) to toggle the main menu dislay
 # [TODO]: Debug why PiSugar Webpage/Server isn't showing up
-# [TODO]: Change the Background on the Moment Device to the Garage's Logo
 
 HOST_NAME = "0.0.0.0"
 PORT = 8080

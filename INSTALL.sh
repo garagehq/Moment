@@ -1,4 +1,9 @@
 #!/bin/bash
+
+# Change the background image
+cp background.jpg ~
+DISPLAY=:0 pcmanfm --set-wallpaper ~/background.jpg
+
 # All Packages are pinned to the 2022-04-04 Kernel Release
 
 sudo apt-get install -y git vim xdotool
@@ -113,8 +118,7 @@ sudo cp Moment.desktop ~/Desktop/
 sudo sed -i -e '$i \start_x=1\ngpu_mem=128\n' /boot/config.txt
 
 
-# Change the background image
-DISPLAY=:0 pcmanfm --set-wallpaper background.jpg
+
 
 # Reboot
 echo "[SUCCESS]: Installation Finished, Rebooting Now..."

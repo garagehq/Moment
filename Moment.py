@@ -15,20 +15,17 @@ import json
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 
 ##############################################################################################
-# [TODO]: Webhooks for local testing (might have to switch to Flask)
-# [TODO]: Alexa Integration
-# [TODO]: Google Home Integration
-
 # [TODO]: Add an interrupt button(PiSugar) to refocus (send an 'f' keypress+<ENTER> to stdin in the recorder_thread)
 # [TODO]: Add an interrupt button(PiSugar) to toggle the main menu dislay
 # [TODO]: Debug why PiSugar Webpage/Server isn't showing up
+# [TODO]: Webhooks for local testing (might have to switch to Flask)
+# [TODO]: Alexa Integration
+# [TODO]: Google Home Integration
 
 HOST_NAME = "0.0.0.0"
 PORT = 8080
 MOMENT_CONFIG_FILE = '/home/pi/.config/Moment/moment.config'
 global IP_ADDR
-
-e = threading.Event()
 
 # Default Config File
 default_config = {

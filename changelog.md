@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Fixed Installation Instructions for raspberry-wifi-conf
 - Battery % on Home Screen and Configuration Page
 - Webserver changes retrigger the recording
+- Refocus camera
+- Toggle main screen
 
 ## [0.0.1] - 2022-05-15
 

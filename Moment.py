@@ -145,7 +145,7 @@ class PythonServer(SimpleHTTPRequestHandler):
                 resolution_html + orientation_html + '<input type="submit" value="Submit"> </form><div><h2>Links:</h2> <a href="https://drive.google.com/drive/u/0/folders/1nMJ7mOO1B0X4He8TgJxdbnIvUouT5YlB" target="_blank">View Garage Moments</a><br><a href="http://' + \
                 IP_ADDR + ':80" target="_blank">Configure Moment Wifi.</a><br><a href="http://' + \
                 IP_ADDR + ':5572" target="_blank">Configure RClone via WebUI.</a><br><a href="http://' + \
-                IP_ADDR + ':8423" target="_blank">Configure PiSugar via WebUI.</a><br><form method="POST", enctype="multipart/form-data" action="/factory-reset"><input type="submit" value="Factory Reset"></form></div>' + \
+                IP_ADDR + ':8421" target="_blank">Configure PiSugar via WebUI.</a><br><form method="POST", enctype="multipart/form-data" action="/factory-reset"><input type="submit" value="Factory Reset"></form></div>' + \
                     battery_html + '</body></html>'
             self.send_response(200, "OK")
             self.end_headers()
@@ -451,6 +451,19 @@ class Moment(threading.Thread):
         Text(self.app, color="white", grid=[
             0, 8], text="\n  Press (-) to Upload\n   Press (+) to Save Rec.", size=26)
         
+    def toggle_main_menu(self):
+        self.app.show()
+        print("[DEBUG]: Toggling Application for 4 seconds")
+        sleep(4)
+        self.app.hide()
+    
+    def refocus_camera(self):
+        # I Need to do a command that brings the Camera up incase it is not up
+        print("[DEBUG]: Piping the letter 'f' into the self.video_command STDIN")
+        
+        self.video_command.communicate('f')[0]
+        return
+        
     def run(self):
         # Configure the Directory for the moments and clear out past unsaved moments
         Popen(["mkdir", '-p', config["recording_location"]]).wait()
@@ -522,7 +535,7 @@ class Moment(threading.Thread):
                     config["video"] = 'False'
                 else:
                     if config['orientation'] == 'portrait':
-                        self.start_video_command = "libcamera-vid -t 0 --framerate " + config["framerate"] + " --qt-preview --hflip --vflip --autofocus --keypress -o " + config["recording_location"] + \
+                        start_video_command = "libcamera-vid -t 0 --framerate " + config["framerate"] + " --qt-preview --hflip --vflip --autofocus --keypress -o " + config["recording_location"] + \
                             str(self.filename) + ".h264 --width " + \
                             resolution[config["resolution"]]["height"] + \
                             " --height "+ resolution[config["resolution"]]["width"]
